@@ -174,10 +174,10 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   );
 
   /**
-   * Handle day click - supports check-in/check-out mode and toggle mode
-   * Check-in is the first click, check-out is the second click
-   * Wraps around the week if check-out comes before check-in
-   * Example: Check-in Friday (5), Check-out Tuesday (2) = Fri, Sat, Sun, Mon, Tue
+   * Handle day click - supports multiple selection modes:
+   * 1. Day-by-day clicking: Click contiguous days one at a time to build selection
+   * 2. Check-in/check-out: Click first day, then non-adjacent day to auto-fill range
+   * 3. Toggle off: Click selected day to deselect it
    */
   const handleDayClick = useCallback(
     (dayIndex: number, event: React.MouseEvent) => {
@@ -187,7 +187,7 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
       }
 
       setSelectedDays(prev => {
-        // If clicking an already selected day, toggle it off
+        // If clicking an already selected day, toggle it off and reset
         if (prev.has(dayIndex)) {
           const newSelection = new Set(prev);
           newSelection.delete(dayIndex);
@@ -195,37 +195,51 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
           return newSelection;
         }
 
-        // Check-in mode: If no check-in day is set
-        if (checkInDay === null) {
+        // If no days selected yet, start fresh
+        if (prev.size === 0) {
           setCheckInDay(dayIndex);
           const newSelection = new Set<number>();
           newSelection.add(dayIndex);
           return newSelection;
         }
 
-        // Check-out mode: Fill in all days from check-in to check-out
-        // Handle wrap-around for weekly schedule
+        // Check if clicking an adjacent day (day-by-day mode)
+        const prevArray = Array.from(prev).sort((a, b) => a - b);
+        const minDay = prevArray[0];
+        const maxDay = prevArray[prevArray.length - 1];
+
+        // Check if adjacent (immediate neighbor)
+        const isAdjacentAfter = dayIndex === (maxDay + 1) % 7;
+        const isAdjacentBefore = dayIndex === (minDay - 1 + 7) % 7;
+
+        if (isAdjacentAfter || isAdjacentBefore) {
+          // Day-by-day mode: just add this day
+          const newSelection = new Set(prev);
+          newSelection.add(dayIndex);
+
+          // Don't validate yet - let user keep building
+          // Only validate when they try to finalize (on blur or other action)
+          return newSelection;
+        }
+
+        // Not adjacent - treat as check-in/check-out mode
+        // Use the first selected day as check-in, this click as check-out
+        const checkIn = checkInDay !== null ? checkInDay : minDay;
+        const checkOut = dayIndex;
+
+        // Auto-fill range from check-in to check-out
         const newSelection = new Set<number>();
         const totalDays = 7;
 
-        // Check-in is the start, check-out is the end
-        const start = checkInDay;
-        const end = dayIndex;
-
-        // Calculate the number of days to select (including check-in, excluding check-out as a night)
-        // But we still need to visually select check-out day
         let dayCount;
-        if (end >= start) {
-          // Normal case: check-out is after check-in in the same week
-          dayCount = end - start + 1;
+        if (checkOut >= checkIn) {
+          dayCount = checkOut - checkIn + 1;
         } else {
-          // Wrap-around case: check-out wraps to next week
-          dayCount = (totalDays - start) + end + 1;
+          dayCount = (totalDays - checkIn) + checkOut + 1;
         }
 
-        // Add all days from check-in to check-out (with wrap-around)
         for (let i = 0; i < dayCount; i++) {
-          const currentDay = (start + i) % totalDays;
+          const currentDay = (checkIn + i) % totalDays;
           newSelection.add(currentDay);
         }
 
@@ -236,7 +250,7 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
           return prev;
         }
 
-        setCheckInDay(null); // Reset check-in day after successful selection
+        setCheckInDay(null);
         return newSelection;
       });
     },
@@ -299,6 +313,7 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
 
   /**
    * Update parent component on selection change
+   * Also validate when selection is "complete" (user stopped clicking adjacent days)
    */
   useEffect(() => {
     if (onSelectionChange) {
@@ -307,7 +322,22 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
       );
       onSelectionChange(selectedDaysArray);
     }
-  }, [selectedDays, onSelectionChange]);
+
+    // Only validate if there's a selection and check-in mode is not active
+    // This prevents validation errors while user is still building their selection
+    if (selectedDays.size > 0 && checkInDay === null) {
+      const validation = validateSelection(selectedDays);
+
+      // Only show error if validation fails (selection is complete but invalid)
+      if (!validation.valid && validation.error) {
+        // Small delay to let user finish clicking
+        const timeoutId = setTimeout(() => {
+          displayError(validation.error);
+        }, 500);
+        return () => clearTimeout(timeoutId);
+      }
+    }
+  }, [selectedDays, onSelectionChange, checkInDay, validateSelection, displayError]);
 
   /**
    * Mock function for counting listings

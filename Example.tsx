@@ -81,12 +81,12 @@ export const SearchScheduleSelectorExample: React.FC = () => {
       >
         <h3 style={{ marginTop: 0 }}>How to use:</h3>
         <ul style={{ lineHeight: '1.8' }}>
-          <li><strong>Check-in/Check-out mode:</strong> Click a day to set check-in, then click another day to set check-out. All days between will be selected automatically.</li>
-          <li><strong>Wrap-around support:</strong> You can select across the week boundary! For example, check-in Friday and check-out Tuesday will select Fri, Sat, Sun, Mon, Tue.</li>
+          <li><strong>Day-by-day clicking:</strong> Click Monday, then Tuesday, then Wednesday, etc. Build your selection one day at a time!</li>
+          <li><strong>Check-in/Check-out mode:</strong> Click a day, then click a non-adjacent day to auto-fill the range. Example: Click Friday, then click Tuesday to select Fri-Sat-Sun-Mon-Tue.</li>
           <li><strong>Drag to select:</strong> Click and drag across days to select a range quickly</li>
           <li><strong>Toggle off:</strong> Click any selected day to deselect it and start over</li>
+          <li><strong>Wrap-around support:</strong> You can select across the week boundary (e.g., Fri-Sat-Sun-Mon-Tue)</li>
           <li><strong>Requirements:</strong> Select 2-5 contiguous nights per week</li>
-          <li><strong>Days must be consecutive</strong> (e.g., Sun-Mon-Tue or Fri-Sat-Sun, but not Sun-Tue-Thu)</li>
         </ul>
       </div>
     </div>
