@@ -18,10 +18,16 @@ export const Container = styled.div`
   }
 `;
 
+export const SelectorRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
 export const CalendarIcon = styled.div`
   font-size: 32px;
-  text-align: center;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  flex-shrink: 0;
 `;
 
 export const DaysGrid = styled.div`

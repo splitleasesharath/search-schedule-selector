@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import {
   Container,
+  SelectorRow,
   CalendarIcon,
   DaysGrid,
   DayCell,
@@ -59,6 +60,7 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   );
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<number | null>(null);
+  const [checkInDay, setCheckInDay] = useState<number | null>(null);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [listingsCountPartial, setListingsCountPartial] = useState(0);
@@ -133,30 +135,53 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   );
 
   /**
-   * Handle day click
+   * Handle day click - supports check-in/check-out mode and toggle mode
    */
   const handleDayClick = useCallback(
-    (dayIndex: number) => {
-      setSelectedDays(prev => {
-        const newSelection = new Set(prev);
+    (dayIndex: number, event: React.MouseEvent) => {
+      // Prevent click during drag
+      if (isDragging) {
+        return;
+      }
 
-        if (newSelection.has(dayIndex)) {
+      setSelectedDays(prev => {
+        // If clicking an already selected day, toggle it off
+        if (prev.has(dayIndex)) {
+          const newSelection = new Set(prev);
           newSelection.delete(dayIndex);
-        } else {
+          setCheckInDay(null);
+          return newSelection;
+        }
+
+        // Check-in/Check-out mode: If no check-in day is set
+        if (checkInDay === null) {
+          setCheckInDay(dayIndex);
+          const newSelection = new Set<number>();
           newSelection.add(dayIndex);
+          return newSelection;
+        }
+
+        // Check-out mode: Fill in all days between check-in and check-out
+        const start = Math.min(checkInDay, dayIndex);
+        const end = Math.max(checkInDay, dayIndex);
+        const newSelection = new Set<number>();
+
+        for (let i = start; i <= end; i++) {
+          newSelection.add(i);
         }
 
         const validation = validateSelection(newSelection);
 
         if (!validation.valid && validation.error) {
           displayError(validation.error);
-          return prev; // Don't update if invalid
+          return prev;
         }
 
+        setCheckInDay(null); // Reset check-in day after successful selection
         return newSelection;
       });
     },
-    [validateSelection, displayError]
+    [checkInDay, validateSelection, displayError, isDragging]
   );
 
   /**
@@ -235,29 +260,34 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
 
   return (
     <Container className={className}>
-      <CalendarIcon>📅</CalendarIcon>
+      <SelectorRow>
+        <CalendarIcon>📅</CalendarIcon>
 
-      <DaysGrid>
-        {DAYS_OF_WEEK.map((day, index) => (
-          <DayCell
-            key={day.id}
-            $isSelected={selectedDays.has(index)}
-            $isDragging={isDragging}
-            onMouseDown={() => handleDragStart(index)}
-            onMouseEnter={() => handleDragOver(index)}
-            onMouseUp={handleDragEnd}
-            onClick={() => handleDayClick(index)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            role="button"
-            aria-pressed={selectedDays.has(index)}
-            aria-label={`Select ${day.fullName}`}
-          >
-            {day.singleLetter}
-          </DayCell>
-        ))}
-      </DaysGrid>
+        <DaysGrid>
+          {DAYS_OF_WEEK.map((day, index) => (
+            <DayCell
+              key={day.id}
+              $isSelected={selectedDays.has(index)}
+              $isDragging={isDragging}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                handleDragStart(index);
+              }}
+              onMouseEnter={() => handleDragOver(index)}
+              onMouseUp={handleDragEnd}
+              onClick={(e) => handleDayClick(index, e)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2 }}
+              role="button"
+              aria-pressed={selectedDays.has(index)}
+              aria-label={`Select ${day.fullName}`}
+            >
+              {day.singleLetter}
+            </DayCell>
+          ))}
+        </DaysGrid>
+      </SelectorRow>
 
       <InfoContainer>
         {selectedDays.size > 0 && (
