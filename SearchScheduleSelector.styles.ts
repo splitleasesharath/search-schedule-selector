@@ -111,8 +111,10 @@ export const DayCell = styled(motion.button)<{
 export const InfoContainer = styled.div`
   min-height: 24px;
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 8px;
 `;
 
 export const InfoText = styled.p`
@@ -124,6 +126,27 @@ export const InfoText = styled.p`
 
   @media (max-width: 768px) {
     font-size: 13px;
+  }
+`;
+
+export const ResetButton = styled.button`
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: #ffffff;
+    text-decoration: none;
+  }
+
+  &:active {
+    transform: scale(0.98);
   }
 `;
 

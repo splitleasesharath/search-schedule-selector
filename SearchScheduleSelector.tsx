@@ -8,6 +8,7 @@ import {
   DayCell,
   InfoContainer,
   InfoText,
+  ResetButton,
   ErrorPopup,
   ErrorIcon,
   ErrorMessage,
@@ -211,18 +212,19 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
         const start = checkInDay;
         const end = dayIndex;
 
-        // Calculate the number of nights
-        let nightCount;
+        // Calculate the number of days to select (including check-in, excluding check-out as a night)
+        // But we still need to visually select check-out day
+        let dayCount;
         if (end >= start) {
           // Normal case: check-out is after check-in in the same week
-          nightCount = end - start + 1;
+          dayCount = end - start + 1;
         } else {
           // Wrap-around case: check-out wraps to next week
-          nightCount = (totalDays - start) + end + 1;
+          dayCount = (totalDays - start) + end + 1;
         }
 
         // Add all days from check-in to check-out (with wrap-around)
-        for (let i = 0; i < nightCount; i++) {
+        for (let i = 0; i < dayCount; i++) {
           const currentDay = (start + i) % totalDays;
           newSelection.add(currentDay);
         }
@@ -288,6 +290,14 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   }, [selectedDays, validateSelection, displayError]);
 
   /**
+   * Handle reset - clear all selections
+   */
+  const handleReset = useCallback(() => {
+    setSelectedDays(new Set());
+    setCheckInDay(null);
+  }, []);
+
+  /**
    * Update parent component on selection change
    */
   useEffect(() => {
@@ -348,9 +358,12 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
 
       <InfoContainer>
         {selectedDays.size > 0 && (
-          <InfoText>
-            {listingsCountExact} exact match{listingsCountExact !== 1 ? 'es' : ''} • {listingsCountPartial} partial match{listingsCountPartial !== 1 ? 'es' : ''}
-          </InfoText>
+          <>
+            <InfoText>
+              {listingsCountExact} exact match{listingsCountExact !== 1 ? 'es' : ''} • {listingsCountPartial} partial match{listingsCountPartial !== 1 ? 'es' : ''}
+            </InfoText>
+            <ResetButton onClick={handleReset}>Clear selection</ResetButton>
+          </>
         )}
       </InfoContainer>
 

@@ -48,7 +48,10 @@ export const SearchScheduleSelectorExample: React.FC = () => {
             <strong>Days:</strong> {selectedDays.map(d => d.fullName).join(', ')}
           </p>
           <p style={{ fontSize: '16px', lineHeight: '1.6' }}>
-            <strong>Total Nights:</strong> {selectedDays.length} per week
+            <strong>Total Nights:</strong> {selectedDays.length - 1} per week
+          </p>
+          <p style={{ fontSize: '14px', color: '#666', marginTop: '8px' }}>
+            (Check-out day doesn't count as a night)
           </p>
         </div>
       )}
