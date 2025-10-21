@@ -61,11 +61,11 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   );
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<number | null>(null);
-  const [checkInDay, setCheckInDay] = useState<number | null>(null);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [listingsCountPartial, setListingsCountPartial] = useState(0);
   const [listingsCountExact, setListingsCountExact] = useState(0);
+  const [validationTimeout, setValidationTimeout] = useState<NodeJS.Timeout | null>(null);
 
   /**
    * Check if selected days are contiguous (handles wrap-around)
@@ -174,10 +174,29 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   );
 
   /**
-   * Handle day click - supports multiple selection modes:
-   * 1. Day-by-day clicking: Click contiguous days one at a time to build selection
-   * 2. Check-in/check-out: Click first day, then non-adjacent day to auto-fill range
-   * 3. Toggle off: Click selected day to deselect it
+   * Trigger validation after inactivity
+   */
+  const scheduleValidation = useCallback(() => {
+    // Clear existing timeout
+    if (validationTimeout) {
+      clearTimeout(validationTimeout);
+    }
+
+    // Schedule new validation after 3 seconds
+    const timeout = setTimeout(() => {
+      if (selectedDays.size > 0) {
+        const validation = validateSelection(selectedDays);
+        if (!validation.valid && validation.error) {
+          displayError(validation.error);
+        }
+      }
+    }, 3000);
+
+    setValidationTimeout(timeout);
+  }, [validationTimeout, selectedDays, validateSelection, displayError]);
+
+  /**
+   * Handle day click - Simple toggle mode for day-by-day selection
    */
   const handleDayClick = useCallback(
     (dayIndex: number, event: React.MouseEvent) => {
@@ -187,78 +206,26 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
       }
 
       setSelectedDays(prev => {
-        // If clicking an already selected day, toggle it off and reset
-        if (prev.has(dayIndex)) {
-          const newSelection = new Set(prev);
+        const newSelection = new Set(prev);
+
+        // Simple toggle: if selected, remove it; if not selected, add it
+        if (newSelection.has(dayIndex)) {
           newSelection.delete(dayIndex);
-          setCheckInDay(null);
-          return newSelection;
-        }
-
-        // If no days selected yet, start fresh
-        if (prev.size === 0) {
-          setCheckInDay(dayIndex);
-          const newSelection = new Set<number>();
-          newSelection.add(dayIndex);
-          return newSelection;
-        }
-
-        // Check if clicking an adjacent day (day-by-day mode)
-        const prevArray = Array.from(prev).sort((a, b) => a - b);
-        const minDay = prevArray[0];
-        const maxDay = prevArray[prevArray.length - 1];
-
-        // Check if adjacent (immediate neighbor)
-        const isAdjacentAfter = dayIndex === (maxDay + 1) % 7;
-        const isAdjacentBefore = dayIndex === (minDay - 1 + 7) % 7;
-
-        if (isAdjacentAfter || isAdjacentBefore) {
-          // Day-by-day mode: just add this day
-          const newSelection = new Set(prev);
-          newSelection.add(dayIndex);
-
-          // Don't validate yet - let user keep building
-          // Only validate when they try to finalize (on blur or other action)
-          return newSelection;
-        }
-
-        // Not adjacent - treat as check-in/check-out mode
-        // Use the first selected day as check-in, this click as check-out
-        const checkIn = checkInDay !== null ? checkInDay : minDay;
-        const checkOut = dayIndex;
-
-        // Auto-fill range from check-in to check-out
-        const newSelection = new Set<number>();
-        const totalDays = 7;
-
-        let dayCount;
-        if (checkOut >= checkIn) {
-          dayCount = checkOut - checkIn + 1;
         } else {
-          dayCount = (totalDays - checkIn) + checkOut + 1;
+          newSelection.add(dayIndex);
         }
 
-        for (let i = 0; i < dayCount; i++) {
-          const currentDay = (checkIn + i) % totalDays;
-          newSelection.add(currentDay);
-        }
-
-        const validation = validateSelection(newSelection);
-
-        if (!validation.valid && validation.error) {
-          displayError(validation.error);
-          return prev;
-        }
-
-        setCheckInDay(null);
         return newSelection;
       });
+
+      // Schedule validation for 3 seconds later
+      scheduleValidation();
     },
-    [checkInDay, validateSelection, displayError, isDragging]
+    [isDragging, scheduleValidation]
   );
 
   /**
-   * Handle drag start
+   * Handle drag start - clears selection and starts fresh
    */
   const handleDragStart = useCallback((dayIndex: number) => {
     setIsDragging(true);
@@ -269,18 +236,29 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   }, []);
 
   /**
-   * Handle drag over
+   * Handle drag over - fills range with wrap-around support
    */
   const handleDragOver = useCallback(
     (dayIndex: number) => {
       if (!isDragging || dragStart === null) return;
 
-      const start = Math.min(dragStart, dayIndex);
-      const end = Math.max(dragStart, dayIndex);
       const newSelection = new Set<number>();
+      const totalDays = 7;
 
-      for (let i = start; i <= end; i++) {
-        newSelection.add(i);
+      // Calculate range with wrap-around
+      let dayCount;
+      if (dayIndex >= dragStart) {
+        // Normal range
+        dayCount = dayIndex - dragStart + 1;
+      } else {
+        // Wrap-around range
+        dayCount = (totalDays - dragStart) + dayIndex + 1;
+      }
+
+      // Fill all days in range
+      for (let i = 0; i < dayCount; i++) {
+        const currentDay = (dragStart + i) % totalDays;
+        newSelection.add(currentDay);
       }
 
       setSelectedDays(newSelection);
@@ -289,18 +267,20 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   );
 
   /**
-   * Handle drag end
+   * Handle drag end - validate and schedule error if needed
    */
   const handleDragEnd = useCallback(() => {
-    const validation = validateSelection(selectedDays);
-
-    if (!validation.valid && validation.error) {
-      displayError(validation.error);
-      setSelectedDays(new Set());
-    }
-
     setIsDragging(false);
     setDragStart(null);
+
+    // Validate immediately on drag end
+    if (selectedDays.size > 0) {
+      const validation = validateSelection(selectedDays);
+      if (!validation.valid && validation.error) {
+        displayError(validation.error);
+        setSelectedDays(new Set());
+      }
+    }
   }, [selectedDays, validateSelection, displayError]);
 
   /**
@@ -308,12 +288,14 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
    */
   const handleReset = useCallback(() => {
     setSelectedDays(new Set());
-    setCheckInDay(null);
-  }, []);
+    if (validationTimeout) {
+      clearTimeout(validationTimeout);
+      setValidationTimeout(null);
+    }
+  }, [validationTimeout]);
 
   /**
    * Update parent component on selection change
-   * Also validate when selection is "complete" (user stopped clicking adjacent days)
    */
   useEffect(() => {
     if (onSelectionChange) {
@@ -322,22 +304,7 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
       );
       onSelectionChange(selectedDaysArray);
     }
-
-    // Only validate if there's a selection and check-in mode is not active
-    // This prevents validation errors while user is still building their selection
-    if (selectedDays.size > 0 && checkInDay === null) {
-      const validation = validateSelection(selectedDays);
-
-      // Only show error if validation fails (selection is complete but invalid)
-      if (!validation.valid && validation.error) {
-        // Small delay to let user finish clicking
-        const timeoutId = setTimeout(() => {
-          displayError(validation.error);
-        }, 500);
-        return () => clearTimeout(timeoutId);
-      }
-    }
-  }, [selectedDays, onSelectionChange, checkInDay, validateSelection, displayError]);
+  }, [selectedDays, onSelectionChange]);
 
   /**
    * Mock function for counting listings
