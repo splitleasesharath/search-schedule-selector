@@ -49,6 +49,8 @@ export const DaysGrid = styled.div`
 export const DayCell = styled(motion.button)<{
   $isSelected: boolean;
   $isDragging: boolean;
+  $hasError?: boolean;
+  $errorStyle?: 1 | 2 | 3;
 }>`
   width: 48px;
   height: 48px;
@@ -62,19 +64,61 @@ export const DayCell = styled(motion.button)<{
   cursor: ${props => props.$isDragging ? 'grabbing' : 'pointer'};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
-  background: ${props =>
-    props.$isSelected
-      ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-      : 'rgba(255, 255, 255, 0.9)'
-  };
+  /* Style 1: Red gradient background */
+  ${props => props.$hasError && props.$errorStyle === 1 && props.$isSelected && `
+    background: linear-gradient(135deg, #f93a5a 0%, #d32f2f 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(249, 58, 90, 0.4) !important;
+    animation: pulse-error 1.5s ease-in-out infinite;
 
-  color: ${props => props.$isSelected ? '#ffffff' : '#333333'};
+    @keyframes pulse-error {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+  `}
 
-  box-shadow: ${props =>
-    props.$isSelected
-      ? '0 4px 12px rgba(102, 126, 234, 0.4)'
-      : '0 2px 8px rgba(0, 0, 0, 0.1)'
-  };
+  /* Style 2: Red border with shake */
+  ${props => props.$hasError && props.$errorStyle === 2 && props.$isSelected && `
+    border: 2px solid #d32f2f !important;
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: #d32f2f !important;
+    box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.2) !important;
+    animation: shake 0.5s ease-in-out;
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+  `}
+
+  /* Style 3: Striped pattern */
+  ${props => props.$hasError && props.$errorStyle === 3 && props.$isSelected && `
+    background: repeating-linear-gradient(
+      45deg,
+      #667eea,
+      #667eea 10px,
+      #d32f2f 10px,
+      #d32f2f 20px
+    ) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(211, 47, 47, 0.4) !important;
+  `}
+
+  /* Normal selected state (no error) */
+  ${props => !props.$hasError && `
+    background: ${
+      props.$isSelected
+        ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        : 'rgba(255, 255, 255, 0.9)'
+    };
+    color: ${props.$isSelected ? '#ffffff' : '#333333'};
+    box-shadow: ${
+      props.$isSelected
+        ? '0 4px 12px rgba(102, 126, 234, 0.4)'
+        : '0 2px 8px rgba(0, 0, 0, 0.1)'
+    };
+  `}
 
   &:hover {
     box-shadow: ${props =>

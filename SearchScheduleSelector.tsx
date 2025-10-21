@@ -61,8 +61,10 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   );
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<number | null>(null);
+  const [mouseDownIndex, setMouseDownIndex] = useState<number | null>(null);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [hasContiguityError, setHasContiguityError] = useState(false);
   const [listingsCountPartial, setListingsCountPartial] = useState(0);
   const [listingsCountExact, setListingsCountExact] = useState(0);
   const [validationTimeout, setValidationTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -122,23 +124,28 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
 
   /**
    * Validate the current selection
+   * NOTE: Nights = Days - 1 (last day is checkout, doesn't count as a night)
    */
   const validateSelection = useCallback(
     (days: Set<number>): ValidationResult => {
-      const count = days.size;
+      const dayCount = days.size;
+      const nightCount = dayCount - 1; // Checkout day doesn't count as a night
 
-      if (count === 0) {
+      if (dayCount === 0) {
         return { valid: true };
       }
 
-      if (count < minDays) {
+      // Need at least minDays + 1 days to have minDays nights
+      // Example: 2 nights requires 3 days (check-in + 2 nights + checkout)
+      if (nightCount < minDays) {
         return {
           valid: false,
           error: `Please select at least ${minDays} night${minDays > 1 ? 's' : ''} per week`,
         };
       }
 
-      if (count > maxDays) {
+      // Can't have more than maxDays nights
+      if (nightCount > maxDays) {
         return {
           valid: false,
           error: `Please select no more than ${maxDays} night${maxDays > 1 ? 's' : ''} per week`,
@@ -174,114 +181,99 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   );
 
   /**
-   * Trigger validation after inactivity
+   * Handle mouse down - Start tracking for click vs drag
    */
-  const scheduleValidation = useCallback(() => {
-    // Clear existing timeout
-    if (validationTimeout) {
-      clearTimeout(validationTimeout);
-    }
-
-    // Schedule new validation after 3 seconds
-    const timeout = setTimeout(() => {
-      if (selectedDays.size > 0) {
-        const validation = validateSelection(selectedDays);
-        if (!validation.valid && validation.error) {
-          displayError(validation.error);
-        }
-      }
-    }, 3000);
-
-    setValidationTimeout(timeout);
-  }, [validationTimeout, selectedDays, validateSelection, displayError]);
-
-  /**
-   * Handle day click - Simple toggle mode for day-by-day selection
-   */
-  const handleDayClick = useCallback(
-    (dayIndex: number, event: React.MouseEvent) => {
-      // Prevent click during drag
-      if (isDragging) {
-        return;
-      }
-
-      setSelectedDays(prev => {
-        const newSelection = new Set(prev);
-
-        // Simple toggle: if selected, remove it; if not selected, add it
-        if (newSelection.has(dayIndex)) {
-          newSelection.delete(dayIndex);
-        } else {
-          newSelection.add(dayIndex);
-        }
-
-        return newSelection;
-      });
-
-      // Schedule validation for 3 seconds later
-      scheduleValidation();
-    },
-    [isDragging, scheduleValidation]
-  );
-
-  /**
-   * Handle drag start - clears selection and starts fresh
-   */
-  const handleDragStart = useCallback((dayIndex: number) => {
-    setIsDragging(true);
+  const handleMouseDown = useCallback((dayIndex: number) => {
+    setMouseDownIndex(dayIndex);
     setDragStart(dayIndex);
-    const newSelection = new Set<number>();
-    newSelection.add(dayIndex);
-    setSelectedDays(newSelection);
   }, []);
 
   /**
-   * Handle drag over - fills range with wrap-around support
+   * Handle mouse enter - If dragging, fill range
    */
-  const handleDragOver = useCallback(
+  const handleMouseEnter = useCallback(
     (dayIndex: number) => {
-      if (!isDragging || dragStart === null) return;
+      // Only drag if mouse is down and we moved to a different cell
+      if (mouseDownIndex !== null && dayIndex !== mouseDownIndex) {
+        setIsDragging(true);
 
-      const newSelection = new Set<number>();
-      const totalDays = 7;
+        const newSelection = new Set<number>();
+        const totalDays = 7;
+        const start = mouseDownIndex;
 
-      // Calculate range with wrap-around
-      let dayCount;
-      if (dayIndex >= dragStart) {
-        // Normal range
-        dayCount = dayIndex - dragStart + 1;
-      } else {
-        // Wrap-around range
-        dayCount = (totalDays - dragStart) + dayIndex + 1;
+        // Calculate range with wrap-around
+        let dayCount;
+        if (dayIndex >= start) {
+          dayCount = dayIndex - start + 1;
+        } else {
+          dayCount = (totalDays - start) + dayIndex + 1;
+        }
+
+        // Fill all days in range
+        for (let i = 0; i < dayCount; i++) {
+          const currentDay = (start + i) % totalDays;
+          newSelection.add(currentDay);
+        }
+
+        setSelectedDays(newSelection);
       }
-
-      // Fill all days in range
-      for (let i = 0; i < dayCount; i++) {
-        const currentDay = (dragStart + i) % totalDays;
-        newSelection.add(currentDay);
-      }
-
-      setSelectedDays(newSelection);
     },
-    [isDragging, dragStart]
+    [mouseDownIndex]
   );
 
   /**
-   * Handle drag end - validate and schedule error if needed
+   * Handle mouse up - Determine if click or drag, then act accordingly
    */
-  const handleDragEnd = useCallback(() => {
-    setIsDragging(false);
-    setDragStart(null);
+  const handleMouseUp = useCallback(
+    (dayIndex: number) => {
+      if (mouseDownIndex === null) return;
 
-    // Validate immediately on drag end
-    if (selectedDays.size > 0) {
-      const validation = validateSelection(selectedDays);
-      if (!validation.valid && validation.error) {
-        displayError(validation.error);
-        setSelectedDays(new Set());
+      // Check if this was a click (same cell) or drag (different cell)
+      if (!isDragging && dayIndex === mouseDownIndex) {
+        // CLICK - Toggle the day
+        setSelectedDays(prev => {
+          const newSelection = new Set(prev);
+
+          if (newSelection.has(dayIndex)) {
+            newSelection.delete(dayIndex);
+          } else {
+            newSelection.add(dayIndex);
+          }
+
+          // Clear existing validation timeout
+          if (validationTimeout) {
+            clearTimeout(validationTimeout);
+          }
+
+          // Schedule validation after 3 seconds of inactivity
+          const timeout = setTimeout(() => {
+            // Only validate if selection is invalid
+            const validation = validateSelection(newSelection);
+            if (!validation.valid && validation.error) {
+              displayError(validation.error);
+            }
+          }, 3000);
+
+          setValidationTimeout(timeout);
+
+          return newSelection;
+        });
+      } else if (isDragging) {
+        // DRAG - Validate immediately
+        const validation = validateSelection(selectedDays);
+        if (!validation.valid && validation.error) {
+          displayError(validation.error);
+          setSelectedDays(new Set());
+        }
       }
-    }
-  }, [selectedDays, validateSelection, displayError]);
+
+      // Reset drag state
+      setIsDragging(false);
+      setDragStart(null);
+      setMouseDownIndex(null);
+    },
+    [isDragging, mouseDownIndex, selectedDays, validationTimeout, validateSelection, displayError]
+  );
 
   /**
    * Handle reset - clear all selections
@@ -296,6 +288,7 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
 
   /**
    * Update parent component on selection change
+   * Also check for contiguity errors in real-time
    */
   useEffect(() => {
     if (onSelectionChange) {
@@ -304,7 +297,15 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
       );
       onSelectionChange(selectedDaysArray);
     }
-  }, [selectedDays, onSelectionChange]);
+
+    // Check for contiguity error (visual feedback only, no alert yet)
+    if (selectedDays.size > 1 && requireContiguous) {
+      const isValid = isContiguous(selectedDays);
+      setHasContiguityError(!isValid);
+    } else {
+      setHasContiguityError(false);
+    }
+  }, [selectedDays, onSelectionChange, requireContiguous, isContiguous]);
 
   /**
    * Mock function for counting listings
@@ -333,13 +334,14 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
               key={day.id}
               $isSelected={selectedDays.has(index)}
               $isDragging={isDragging}
+              $hasError={hasContiguityError}
+              $errorStyle={1}
               onMouseDown={(e) => {
                 e.preventDefault();
-                handleDragStart(index);
+                handleMouseDown(index);
               }}
-              onMouseEnter={() => handleDragOver(index)}
-              onMouseUp={handleDragEnd}
-              onClick={(e) => handleDayClick(index, e)}
+              onMouseEnter={() => handleMouseEnter(index)}
+              onMouseUp={() => handleMouseUp(index)}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               transition={{ duration: 0.2 }}
