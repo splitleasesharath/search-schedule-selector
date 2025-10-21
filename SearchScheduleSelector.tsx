@@ -298,14 +298,19 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
       onSelectionChange(selectedDaysArray);
     }
 
-    // Check for contiguity error (visual feedback only, no alert yet)
+    // Check for contiguity error (visual feedback + immediate alert)
     if (selectedDays.size > 1 && requireContiguous) {
       const isValid = isContiguous(selectedDays);
       setHasContiguityError(!isValid);
+
+      // Show contiguity error immediately (don't wait 3 seconds)
+      if (!isValid) {
+        displayError('Please select contiguous days (e.g., Mon-Tue-Wed, not Mon-Wed-Fri)');
+      }
     } else {
       setHasContiguityError(false);
     }
-  }, [selectedDays, onSelectionChange, requireContiguous, isContiguous]);
+  }, [selectedDays, onSelectionChange, requireContiguous, isContiguous, displayError]);
 
   /**
    * Mock function for counting listings
