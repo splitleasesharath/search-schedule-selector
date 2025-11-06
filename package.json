@@ -1,0 +1,48 @@
+{
+  "name": "search-schedule-selector",
+  "version": "1.0.0",
+  "description": "A React component for selecting weekly schedules for split-lease arrangements",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .ts,.tsx"
+  },
+  "keywords": [
+    "react",
+    "schedule",
+    "selector",
+    "calendar",
+    "split-lease",
+    "booking"
+  ],
+  "author": "Split Lease",
+  "license": "MIT",
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "framer-motion": "^10.16.0",
+    "styled-components": "^6.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@types/styled-components": "^5.1.26",
+    "@vitejs/plugin-react": "^4.2.0",
+    "vite": "^5.0.0",
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/splitleasesharath/search-schedule-selector.git"
+  }
+}
