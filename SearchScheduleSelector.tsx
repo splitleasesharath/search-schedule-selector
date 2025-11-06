@@ -47,12 +47,10 @@ const DAYS_OF_WEEK: Day[] = [
  * ```
  */
 export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
-  listing,
   onSelectionChange,
   onError,
   className,
   minDays = 2,
-  maxDays = 5,
   requireContiguous = true,
   initialSelection = [],
 }) => {
@@ -60,15 +58,14 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
     new Set(initialSelection)
   );
   const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState<number | null>(null);
   const [mouseDownIndex, setMouseDownIndex] = useState<number | null>(null);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [hasContiguityError, setHasContiguityError] = useState(false);
-  const [listingsCountPartial, setListingsCountPartial] = useState(0);
-  const [listingsCountExact, setListingsCountExact] = useState(0);
   const [validationTimeout, setValidationTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
   const [errorTimeout, setErrorTimeout] = useState<ReturnType<typeof setTimeout> | null>(null);
+  const [checkinDay, setCheckinDay] = useState<string>('');
+  const [checkoutDay, setCheckoutDay] = useState<string>('');
 
   /**
    * Check if selected days are contiguous (handles wrap-around)
@@ -106,18 +103,12 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
 
     // If there's exactly one gap, check if it wraps around (6 -> 0)
     if (gapIndex !== -1) {
-      // The gap should be between 6 and 0
-      const beforeGap = daysArray[gapIndex - 1];
-      const afterGap = daysArray[gapIndex];
-
       // Check if last element is 6 and first element is 0
       const lastElement = daysArray[daysArray.length - 1];
       const firstElement = daysArray[0];
 
       // Wrap-around is valid if: last day is 6 (Saturday) and first day is 0 (Sunday)
-      if (lastElement === 6 && firstElement === 0) {
-        return true;
-      }
+      return (lastElement === 6 && firstElement === 0);
     }
 
     return false;
@@ -145,14 +136,6 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
         };
       }
 
-      // Can't have more than maxDays nights
-      if (nightCount > maxDays) {
-        return {
-          valid: false,
-          error: `Please select no more than ${maxDays} night${maxDays > 1 ? 's' : ''} per week`,
-        };
-      }
-
       if (requireContiguous && !isContiguous(days)) {
         return {
           valid: false,
@@ -162,7 +145,7 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
 
       return { valid: true };
     },
-    [minDays, maxDays, requireContiguous, isContiguous]
+    [minDays, requireContiguous, isContiguous]
   );
 
   /**
@@ -197,7 +180,6 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
    */
   const handleMouseDown = useCallback((dayIndex: number) => {
     setMouseDownIndex(dayIndex);
-    setDragStart(dayIndex);
   }, []);
 
   /**
@@ -281,7 +263,6 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
 
       // Reset drag state
       setIsDragging(false);
-      setDragStart(null);
       setMouseDownIndex(null);
     },
     [isDragging, mouseDownIndex, selectedDays, validationTimeout, validateSelection, displayError]
@@ -304,6 +285,66 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   }, [validationTimeout, errorTimeout]);
 
   /**
+   * Calculate check-in and check-out days based on selection
+   */
+  const calculateCheckinCheckout = useCallback((days: Set<number>) => {
+    if (days.size === 0) {
+      setCheckinDay('');
+      setCheckoutDay('');
+      return;
+    }
+
+    if (!isContiguous(days)) {
+      setCheckinDay('');
+      setCheckoutDay('');
+      return;
+    }
+
+    const sortedDays = Array.from(days).sort((a, b) => a - b);
+
+    if (sortedDays.length === 1) {
+      setCheckinDay(DAYS_OF_WEEK[sortedDays[0]].fullName);
+      setCheckoutDay(DAYS_OF_WEEK[sortedDays[0]].fullName);
+      return;
+    }
+
+    const hasSunday = sortedDays.includes(0);
+    const hasSaturday = sortedDays.includes(6);
+
+    // Check for wrap-around case (e.g., Fri-Sat-Sun-Mon)
+    if (hasSunday && hasSaturday && sortedDays.length < 7) {
+      // Find the gap in the sequence
+      let gapStart = -1;
+      let gapEnd = -1;
+
+      for (let i = 0; i < sortedDays.length - 1; i++) {
+        if (sortedDays[i + 1] - sortedDays[i] > 1) {
+          gapStart = sortedDays[i] + 1;
+          gapEnd = sortedDays[i + 1] - 1;
+          break;
+        }
+      }
+
+      if (gapStart !== -1 && gapEnd !== -1) {
+        // Wrap-around case: check-in is first day after gap, check-out is last day before gap
+        const checkinIndex = sortedDays.find(day => day > gapEnd) ?? 0;
+        const checkoutIndex = sortedDays.filter(day => day < gapStart).pop() ?? 6;
+
+        setCheckinDay(DAYS_OF_WEEK[checkinIndex].fullName);
+        setCheckoutDay(DAYS_OF_WEEK[checkoutIndex].fullName);
+      } else {
+        // Standard case
+        setCheckinDay(DAYS_OF_WEEK[sortedDays[0]].fullName);
+        setCheckoutDay(DAYS_OF_WEEK[sortedDays[sortedDays.length - 1]].fullName);
+      }
+    } else {
+      // Standard non-wrap case
+      setCheckinDay(DAYS_OF_WEEK[sortedDays[0]].fullName);
+      setCheckoutDay(DAYS_OF_WEEK[sortedDays[sortedDays.length - 1]].fullName);
+    }
+  }, [isContiguous]);
+
+  /**
    * Update parent component on selection change
    * Also check for contiguity errors in real-time
    */
@@ -314,6 +355,9 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
       );
       onSelectionChange(selectedDaysArray);
     }
+
+    // Calculate check-in/check-out
+    calculateCheckinCheckout(selectedDays);
 
     // Check for contiguity error (visual feedback + immediate alert)
     if (selectedDays.size > 1 && requireContiguous) {
@@ -332,23 +376,8 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
         setShowError(false);
       }
     }
-  }, [selectedDays, onSelectionChange, requireContiguous, isContiguous, hasContiguityError, showError, displayError]);
+  }, [selectedDays, onSelectionChange, requireContiguous, isContiguous, hasContiguityError, showError, displayError, calculateCheckinCheckout]);
 
-  /**
-   * Mock function for counting listings
-   * Replace with actual API call in production
-   */
-  useEffect(() => {
-    if (selectedDays.size > 0) {
-      // TODO: Replace with actual API call
-      // Example: fetchListingCounts(Array.from(selectedDays))
-      setListingsCountPartial(Math.floor(Math.random() * 20));
-      setListingsCountExact(Math.floor(Math.random() * 10));
-    } else {
-      setListingsCountPartial(0);
-      setListingsCountExact(0);
-    }
-  }, [selectedDays]);
 
   return (
     <Container className={className}>
@@ -383,10 +412,10 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
       </SelectorRow>
 
       <InfoContainer>
-        {selectedDays.size > 0 && (
+        {selectedDays.size > 0 && checkinDay && checkoutDay && (
           <>
             <InfoText>
-              {listingsCountExact} exact match{listingsCountExact !== 1 ? 'es' : ''} • {listingsCountPartial} partial match{listingsCountPartial !== 1 ? 'es' : ''}
+              <strong>Check-in:</strong> {checkinDay} • <strong>Check-out:</strong> {checkoutDay}
             </InfoText>
             <ResetButton onClick={handleReset}>Clear selection</ResetButton>
           </>
