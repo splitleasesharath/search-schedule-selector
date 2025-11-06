@@ -236,6 +236,15 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
           const newSelection = new Set(prev);
 
           if (newSelection.has(dayIndex)) {
+            // Check if removing this day would go below minimum nights
+            // After removal: (size - 1) days, which gives (size - 1 - 1) = (size - 2) nights
+            const daysAfterRemoval = newSelection.size - 1;
+            const nightsAfterRemoval = daysAfterRemoval - 1; // Checkout day doesn't count
+            if (nightsAfterRemoval < minDays) {
+              // Prevent removal and show error
+              displayError(`Cannot remove day - you must select at least ${minDays} night${minDays > 1 ? 's' : ''} per week`);
+              return prev; // Return unchanged selection
+            }
             newSelection.delete(dayIndex);
           } else {
             newSelection.add(dayIndex);
