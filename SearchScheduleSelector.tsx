@@ -50,7 +50,7 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   onSelectionChange,
   onError,
   className,
-  minDays = 2,
+  minDays = 3,
   requireContiguous = true,
   initialSelection = [],
 }) => {
@@ -69,49 +69,56 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
 
   /**
    * Check if selected days are contiguous (handles wrap-around)
+   * Uses the exact logic from index_lite page
    * Example: [5, 6, 0, 1, 2] (Fri, Sat, Sun, Mon, Tue) is contiguous
    */
   const isContiguous = useCallback((days: Set<number>): boolean => {
-    if (days.size === 0) return true;
+    const daysArray = Array.from(days);
 
-    const daysArray = Array.from(days).sort((a, b) => a - b);
+    // Edge cases
+    if (daysArray.length <= 1) {
+      return true;
+    }
 
-    // Check for normal contiguity (no wrap-around)
-    let isNormalContiguous = true;
-    for (let i = 1; i < daysArray.length; i++) {
-      if (daysArray[i] - daysArray[i - 1] !== 1) {
-        isNormalContiguous = false;
+    if (daysArray.length >= 6) {
+      return true;
+    }
+
+    const sortedDays = [...daysArray].sort((a, b) => a - b);
+
+    // STEP 1: Check if selected days are continuous (regular check)
+    let isRegularContinuous = true;
+    for (let i = 1; i < sortedDays.length; i++) {
+      if (sortedDays[i] !== sortedDays[i - 1] + 1) {
+        isRegularContinuous = false;
         break;
       }
     }
 
-    if (isNormalContiguous) return true;
+    if (isRegularContinuous) {
+      return true;
+    }
 
-    // Check for wrap-around contiguity
-    // If it wraps, the pattern will be: high numbers (5,6) then low numbers (0,1,2)
-    // Find the gap in the sequence
-    let gapIndex = -1;
-    for (let i = 1; i < daysArray.length; i++) {
-      if (daysArray[i] - daysArray[i - 1] > 1) {
-        if (gapIndex !== -1) {
-          // More than one gap means not contiguous
-          return false;
-        }
-        gapIndex = i;
+    // STEP 2: Check if UNSELECTED days are continuous (implies wrap-around)
+    const allDays = [0, 1, 2, 3, 4, 5, 6];
+    const unselectedDays = allDays.filter(day => !sortedDays.includes(day));
+
+    if (unselectedDays.length === 0) {
+      // All days selected
+      return true;
+    }
+
+    // Check if unselected days are continuous
+    const sortedUnselected = [...unselectedDays].sort((a, b) => a - b);
+    for (let i = 1; i < sortedUnselected.length; i++) {
+      if (sortedUnselected[i] !== sortedUnselected[i - 1] + 1) {
+        // Unselected days not continuous, selection is not valid
+        return false;
       }
     }
 
-    // If there's exactly one gap, check if it wraps around (6 -> 0)
-    if (gapIndex !== -1) {
-      // Check if last element is 6 and first element is 0
-      const lastElement = daysArray[daysArray.length - 1];
-      const firstElement = daysArray[0];
-
-      // Wrap-around is valid if: last day is 6 (Saturday) and first day is 0 (Sunday)
-      return (lastElement === 6 && firstElement === 0);
-    }
-
-    return false;
+    // Unselected days are continuous, selection wraps around!
+    return true;
   }, []);
 
   /**
@@ -286,6 +293,7 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
 
   /**
    * Calculate check-in and check-out days based on selection
+   * Uses the exact logic from index_lite page
    */
   const calculateCheckinCheckout = useCallback((days: Set<number>) => {
     if (days.size === 0) {
@@ -300,45 +308,71 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
       return;
     }
 
-    const sortedDays = Array.from(days).sort((a, b) => a - b);
+    const selectedDaysArray = Array.from(days);
 
-    if (sortedDays.length === 1) {
-      setCheckinDay(DAYS_OF_WEEK[sortedDays[0]].fullName);
-      setCheckoutDay(DAYS_OF_WEEK[sortedDays[0]].fullName);
+    // Single day selection
+    if (selectedDaysArray.length === 1) {
+      setCheckinDay(DAYS_OF_WEEK[selectedDaysArray[0]].fullName);
+      setCheckoutDay(DAYS_OF_WEEK[selectedDaysArray[0]].fullName);
       return;
     }
 
+    // Multiple day selection
+    const sortedDays = [...selectedDaysArray].sort((a, b) => a - b);
     const hasSunday = sortedDays.includes(0);
     const hasSaturday = sortedDays.includes(6);
 
-    // Check for wrap-around case (e.g., Fri-Sat-Sun-Mon)
+    // Check if this is a wrap-around case
     if (hasSunday && hasSaturday && sortedDays.length < 7) {
-      // Find the gap in the sequence
+      // Find the gap (unselected days) in the week
       let gapStart = -1;
       let gapEnd = -1;
 
+      // Look for the gap in the sorted days
       for (let i = 0; i < sortedDays.length - 1; i++) {
         if (sortedDays[i + 1] - sortedDays[i] > 1) {
-          gapStart = sortedDays[i] + 1;
-          gapEnd = sortedDays[i + 1] - 1;
+          // Found the gap
+          gapStart = sortedDays[i] + 1;  // First unselected day
+          gapEnd = sortedDays[i + 1] - 1;  // Last unselected day
           break;
         }
       }
 
       if (gapStart !== -1 && gapEnd !== -1) {
-        // Wrap-around case: check-in is first day after gap, check-out is last day before gap
-        const checkinIndex = sortedDays.find(day => day > gapEnd) ?? 0;
-        const checkoutIndex = sortedDays.filter(day => day < gapStart).pop() ?? 6;
+        // Wrap-around case with a gap in the middle
+        // Check-in: First selected day AFTER the gap ends
+        // Check-out: Last selected day BEFORE the gap starts
 
-        setCheckinDay(DAYS_OF_WEEK[checkinIndex].fullName);
-        setCheckoutDay(DAYS_OF_WEEK[checkoutIndex].fullName);
+        // Check-in is the smallest day after the gap (considering wrap)
+        let checkinDayIndex: number;
+        if (sortedDays.some(day => day > gapEnd)) {
+          // There are days after the gap in the same week
+          checkinDayIndex = sortedDays.find(day => day > gapEnd)!;
+        } else {
+          // Wrap to Sunday
+          checkinDayIndex = 0;
+        }
+
+        // Check-out is the largest day before the gap
+        let checkoutDayIndex: number;
+        if (sortedDays.some(day => day < gapStart)) {
+          // There are days before the gap
+          checkoutDayIndex = sortedDays.filter(day => day < gapStart).pop()!;
+        } else {
+          // Wrap to Saturday
+          checkoutDayIndex = 6;
+        }
+
+        setCheckinDay(DAYS_OF_WEEK[checkinDayIndex].fullName);
+        setCheckoutDay(DAYS_OF_WEEK[checkoutDayIndex].fullName);
       } else {
-        // Standard case
+        // No gap found (shouldn't happen with Sunday and Saturday selected)
+        // Use standard min/max
         setCheckinDay(DAYS_OF_WEEK[sortedDays[0]].fullName);
         setCheckoutDay(DAYS_OF_WEEK[sortedDays[sortedDays.length - 1]].fullName);
       }
     } else {
-      // Standard non-wrap case
+      // Non-wrap-around case: use first and last in sorted order
       setCheckinDay(DAYS_OF_WEEK[sortedDays[0]].fullName);
       setCheckoutDay(DAYS_OF_WEEK[sortedDays[sortedDays.length - 1]].fullName);
     }
