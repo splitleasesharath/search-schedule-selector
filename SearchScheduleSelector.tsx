@@ -410,7 +410,8 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
         setShowError(false);
       }
     }
-  }, [selectedDays, onSelectionChange, requireContiguous, isContiguous, hasContiguityError, showError, displayError, calculateCheckinCheckout]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDays]);
 
 
   return (
