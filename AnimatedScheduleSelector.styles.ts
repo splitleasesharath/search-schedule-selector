@@ -34,7 +34,7 @@ export const CalendarRow = styled.div<{ $isVisible: boolean }>`
   display: ${props => props.$isVisible ? 'flex' : 'none'};
   align-items: flex-start;
   gap: 16px;
-  padding: 16px;
+  padding: 24px;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 16px;
@@ -44,7 +44,7 @@ export const CalendarRow = styled.div<{ $isVisible: boolean }>`
 
   @media (max-width: 768px) {
     gap: 12px;
-    padding: 12px;
+    padding: 16px;
   }
 `;
 
