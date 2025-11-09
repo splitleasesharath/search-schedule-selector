@@ -4,12 +4,6 @@ import { SearchScheduleSelector } from './SearchScheduleSelector';
 import type { SearchScheduleSelectorProps, Day } from './types';
 import {
   AnimationContainer,
-  ExpandableGridContainer,
-  CalendarRow,
-  CalendarIconWrapper,
-  CalendarGrid,
-  DayHeaderButton,
-  WeekButton,
   PatternLabel,
 } from './AnimatedScheduleSelector.styles';
 
@@ -274,85 +268,25 @@ export const AnimatedScheduleSelector: React.FC<AnimatedScheduleSelectorProps> =
 
   return (
     <AnimationContainer>
-      {/* The core SearchScheduleSelector - ALWAYS VISIBLE */}
+      {/* The core SearchScheduleSelector - now expands to show calendar grid */}
       <SearchScheduleSelector
         {...selectorProps}
         hideInfoDuringAnimation={showAnimatedCalendar}
+        showAnimatedCalendar={showAnimatedCalendar}
+        weekSelections={weekSelections}
+        isButtonSelected={isButtonSelected}
       />
 
-      {/* Animation overlay - expands from and collapses into selector */}
+      {/* Pattern label - shown during pattern animation */}
       <AnimatePresence>
-        {showAnimatedCalendar && (
-          <ExpandableGridContainer
-            $isExpanded={showAnimatedCalendar}
-            $expandDuration={timing.EXPAND_DURATION / 1000}
-            $collapseDuration={timing.COLLAPSE_DURATION / 1000}
-            style={{ pointerEvents: 'none' }}
-            initial={{
-              scaleY: 0.1,
-              opacity: 0,
-              transformOrigin: 'center center'
-            }}
-            animate={{
-              scaleY: animationState === 'collapsing' ? 0.1 : 1,
-              opacity: animationState === 'collapsing' ? 0 : 1,
-              transformOrigin: 'center center'
-            }}
-            exit={{
-              scaleY: 0.1,
-              opacity: 0,
-              transformOrigin: 'center center'
-            }}
-            transition={{
-              duration: animationState === 'collapsing' ? timing.COLLAPSE_DURATION / 1000 : timing.EXPAND_DURATION / 1000,
-              ease: 'easeInOut'
-            }}
+        {animationState === 'showing-patterns' && (
+          <PatternLabel
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
           >
-            <CalendarRow $isVisible={showAnimatedCalendar}>
-              {/* Calendar icon */}
-              <CalendarIconWrapper>
-                📅
-              </CalendarIconWrapper>
-
-              {/* Calendar grid with day headers and week buttons */}
-              <CalendarGrid>
-                {/* Day headers - S, M, T, W, T, F, S */}
-                {DAYS_OF_WEEK.map((day, index) => (
-                  <DayHeaderButton key={`header-${day.id}`}>
-                    {day.singleLetter}
-                  </DayHeaderButton>
-                ))}
-
-                {/* Week buttons - 4 weeks × 7 days = 28 buttons */}
-                {[0, 1, 2, 3].map((weekIndex) => (
-                  DAYS_OF_WEEK.map((day, dayIndex) => (
-                    <WeekButton
-                      key={`week-${weekIndex}-day-${dayIndex}`}
-                      $isSelected={isButtonSelected(weekIndex, dayIndex)}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {day.singleLetter}
-                    </WeekButton>
-                  ))
-                ))}
-              </CalendarGrid>
-            </CalendarRow>
-
-            {/* Pattern label - shown during pattern animation */}
-            <AnimatePresence>
-              {animationState === 'showing-patterns' && (
-                <PatternLabel
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                >
-                  Pattern: {ANIMATION_PATTERNS[currentPatternIndex].name}
-                </PatternLabel>
-              )}
-            </AnimatePresence>
-          </ExpandableGridContainer>
+            Pattern: {ANIMATION_PATTERNS[currentPatternIndex].name}
+          </PatternLabel>
         )}
       </AnimatePresence>
     </AnimationContainer>

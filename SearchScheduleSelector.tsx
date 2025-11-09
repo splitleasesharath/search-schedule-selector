@@ -6,6 +6,8 @@ import {
   CalendarIcon,
   DaysGrid,
   DayCell,
+  DayHeader,
+  WeekDayButton,
   InfoContainer,
   InfoText,
   ResetButton,
@@ -54,6 +56,9 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   requireContiguous = true,
   initialSelection = [],
   hideInfoDuringAnimation = false,
+  showAnimatedCalendar = false,
+  weekSelections = [],
+  isButtonSelected,
 }) => {
   const [selectedDays, setSelectedDays] = useState<Set<number>>(
     new Set(initialSelection)
@@ -429,30 +434,57 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
       <SelectorRow>
         <CalendarIcon>📅</CalendarIcon>
 
-        <DaysGrid>
-          {DAYS_OF_WEEK.map((day, index) => (
-            <DayCell
-              key={day.id}
-              $isSelected={selectedDays.has(index)}
-              $isDragging={isDragging}
-              $hasError={hasContiguityError}
-              $errorStyle={1}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                handleMouseDown(index);
-              }}
-              onMouseEnter={() => handleMouseEnter(index)}
-              onMouseUp={() => handleMouseUp(index)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              role="button"
-              aria-pressed={selectedDays.has(index)}
-              aria-label={`Select ${day.fullName}`}
-            >
-              {day.singleLetter}
-            </DayCell>
-          ))}
+        <DaysGrid $isExpanded={showAnimatedCalendar}>
+          {showAnimatedCalendar ? (
+            <>
+              {/* Day headers - S, M, T, W, T, F, S */}
+              {DAYS_OF_WEEK.map((day) => (
+                <DayHeader key={`header-${day.id}`}>
+                  {day.singleLetter}
+                </DayHeader>
+              ))}
+
+              {/* Week buttons - 4 weeks × 7 days = 28 buttons */}
+              {[0, 1, 2, 3].map((weekIndex) => (
+                DAYS_OF_WEEK.map((day, dayIndex) => (
+                  <WeekDayButton
+                    key={`week-${weekIndex}-day-${dayIndex}`}
+                    $isSelected={isButtonSelected ? isButtonSelected(weekIndex, dayIndex) : false}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {day.singleLetter}
+                  </WeekDayButton>
+                ))
+              ))}
+            </>
+          ) : (
+            /* Regular day selector buttons */
+            DAYS_OF_WEEK.map((day, index) => (
+              <DayCell
+                key={day.id}
+                $isSelected={selectedDays.has(index)}
+                $isDragging={isDragging}
+                $hasError={hasContiguityError}
+                $errorStyle={1}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleMouseDown(index);
+                }}
+                onMouseEnter={() => handleMouseEnter(index)}
+                onMouseUp={() => handleMouseUp(index)}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                role="button"
+                aria-pressed={selectedDays.has(index)}
+                aria-label={`Select ${day.fullName}`}
+              >
+                {day.singleLetter}
+              </DayCell>
+            ))
+          )}
         </DaysGrid>
       </SelectorRow>
 

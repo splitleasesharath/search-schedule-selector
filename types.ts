@@ -48,6 +48,15 @@ export interface SearchScheduleSelectorProps {
 
   /** Hide info container during animation */
   hideInfoDuringAnimation?: boolean;
+
+  /** Show animated calendar grid (for animation) */
+  showAnimatedCalendar?: boolean;
+
+  /** Week selections for animation (4 weeks × 7 days) */
+  weekSelections?: boolean[][];
+
+  /** Callback to check if a button is selected during animation */
+  isButtonSelected?: (weekIndex: number, dayIndex: number) => boolean;
 }
 
 /**

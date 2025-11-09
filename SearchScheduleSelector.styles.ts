@@ -30,19 +30,69 @@ export const CalendarIcon = styled.div`
   flex-shrink: 0;
 `;
 
-export const DaysGrid = styled.div`
+export const DaysGrid = styled.div<{ $isExpanded?: boolean }>`
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: ${props => props.$isExpanded ? 'auto repeat(4, 1fr)' : '1fr'};
   gap: 8px;
   padding: 8px;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
 
   @media (max-width: 768px) {
     gap: 6px;
     padding: 6px;
+  }
+`;
+
+export const DayHeader = styled.div`
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  @media (max-width: 768px) {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+`;
+
+export const WeekDayButton = styled(motion.button)<{ $isSelected: boolean }>`
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  border: none;
+  border-radius: 12px;
+  cursor: default;
+  background: ${props => props.$isSelected
+    ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+    : 'rgba(255, 255, 255, 0.9)'};
+  color: ${props => props.$isSelected ? '#ffffff' : '#333333'};
+  box-shadow: ${props => props.$isSelected
+    ? '0 4px 12px rgba(102, 126, 234, 0.4)'
+    : '0 2px 8px rgba(0, 0, 0, 0.1)'};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  @media (max-width: 768px) {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
   }
 `;
 

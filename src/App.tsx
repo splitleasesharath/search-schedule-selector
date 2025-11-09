@@ -1,8 +1,8 @@
 import React from 'react';
-import { SearchScheduleSelectorExample } from '../Example';
+import { AnimationTestPage } from '../AnimationTestPage';
 
 function App() {
-  return <SearchScheduleSelectorExample />;
+  return <AnimationTestPage />;
 }
 
 export default App;
