@@ -23,16 +23,56 @@ export const AnimationTestPage: React.FC = () => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [showStatus, setShowStatus] = useState(false);
   const [animationSpeed, setAnimationSpeed] = useState<1 | 0.5 | 0.25>(1);
+  const [stepByStepMode, setStepByStepMode] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
   /**
    * Play the animation
    */
   const handlePlayAnimation = () => {
-    setIsAnimating(true);
-    setShowStatus(true);
-    // Force re-mount by changing key, but enable animation
-    setEnableAnimation(true);
-    setAnimationKey(prev => prev + 1);
+    if (stepByStepMode) {
+      // Reset to start for step-by-step
+      setCurrentStep(0);
+      setIsAnimating(false);
+      setShowStatus(true);
+    } else {
+      setIsAnimating(true);
+      setShowStatus(true);
+      // Force re-mount by changing key, but enable animation
+      setEnableAnimation(true);
+      setAnimationKey(prev => prev + 1);
+    }
+  };
+
+  /**
+   * Advance to next step in step-by-step mode
+   */
+  const handleNextStep = () => {
+    setCurrentStep(prev => Math.min(prev + 1, 7)); // 0-7 steps
+  };
+
+  /**
+   * Go back to previous step
+   */
+  const handlePrevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 0));
+  };
+
+  /**
+   * Get step description
+   */
+  const getStepDescription = (step: number): string => {
+    const steps = [
+      '0: Initial - Selector visible',
+      '1: Expanding - Container grows',
+      '2: Pattern 1 - Every Week',
+      '3: Pattern 2 - Every Other Week',
+      '4: Pattern 3 - 2 Weeks On, 2 Off',
+      '5: Pattern 4 - 1 Week On, 3 Off',
+      '6: Collapsing - Container shrinks',
+      '7: Complete - Back to selector',
+    ];
+    return steps[step] || 'Unknown step';
   };
 
   /**
@@ -72,84 +112,188 @@ export const AnimationTestPage: React.FC = () => {
       </TestHeader>
 
       <ControlPanel>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <PlayButton
-            onClick={handlePlayAnimation}
-            disabled={isAnimating}
-            whileHover={{ scale: isAnimating ? 1 : 1.05 }}
-            whileTap={{ scale: isAnimating ? 1 : 0.95 }}
+        {/* Mode Toggle */}
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+          <button
+            onClick={() => {
+              setStepByStepMode(false);
+              setCurrentStep(0);
+            }}
+            style={{
+              padding: '10px 20px',
+              fontSize: '14px',
+              fontWeight: 600,
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              background: !stepByStepMode ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#e0e0e0',
+              color: !stepByStepMode ? '#ffffff' : '#666',
+              transition: 'all 0.2s ease',
+            }}
           >
-            {isAnimating ? (
-              <>
-                <span>▶️</span>
-                <span>Animation Playing...</span>
-              </>
-            ) : (
-              <>
-                <span>▶️</span>
-                <span>Play Animation</span>
-              </>
-            )}
-          </PlayButton>
-
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', fontWeight: 600, color: '#666' }}>Speed:</span>
-            <button
-              onClick={() => setAnimationSpeed(1)}
-              disabled={isAnimating}
-              style={{
-                padding: '8px 16px',
-                fontSize: '14px',
-                fontWeight: 600,
-                border: 'none',
-                borderRadius: '8px',
-                cursor: isAnimating ? 'not-allowed' : 'pointer',
-                background: animationSpeed === 1 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#e0e0e0',
-                color: animationSpeed === 1 ? '#ffffff' : '#666',
-                opacity: isAnimating ? 0.5 : 1,
-                transition: 'all 0.2s ease',
-              }}
-            >
-              1x
-            </button>
-            <button
-              onClick={() => setAnimationSpeed(0.5)}
-              disabled={isAnimating}
-              style={{
-                padding: '8px 16px',
-                fontSize: '14px',
-                fontWeight: 600,
-                border: 'none',
-                borderRadius: '8px',
-                cursor: isAnimating ? 'not-allowed' : 'pointer',
-                background: animationSpeed === 0.5 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#e0e0e0',
-                color: animationSpeed === 0.5 ? '#ffffff' : '#666',
-                opacity: isAnimating ? 0.5 : 1,
-                transition: 'all 0.2s ease',
-              }}
-            >
-              1/2x
-            </button>
-            <button
-              onClick={() => setAnimationSpeed(0.25)}
-              disabled={isAnimating}
-              style={{
-                padding: '8px 16px',
-                fontSize: '14px',
-                fontWeight: 600,
-                border: 'none',
-                borderRadius: '8px',
-                cursor: isAnimating ? 'not-allowed' : 'pointer',
-                background: animationSpeed === 0.25 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#e0e0e0',
-                color: animationSpeed === 0.25 ? '#ffffff' : '#666',
-                opacity: isAnimating ? 0.5 : 1,
-                transition: 'all 0.2s ease',
-              }}
-            >
-              1/4x
-            </button>
-          </div>
+            🎬 Auto Play Mode
+          </button>
+          <button
+            onClick={() => {
+              setStepByStepMode(true);
+              setCurrentStep(0);
+              setIsAnimating(false);
+              setEnableAnimation(false);
+            }}
+            style={{
+              padding: '10px 20px',
+              fontSize: '14px',
+              fontWeight: 600,
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              background: stepByStepMode ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#e0e0e0',
+              color: stepByStepMode ? '#ffffff' : '#666',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            🔬 Step-by-Step Debug Mode
+          </button>
         </div>
+
+        {/* Step-by-Step Controls */}
+        {stepByStepMode && (
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            alignItems: 'center',
+            padding: '16px',
+            background: '#f0f0f0',
+            borderRadius: '12px',
+            marginBottom: '16px',
+          }}>
+            <div style={{ fontSize: '16px', fontWeight: 600, color: '#333' }}>
+              {getStepDescription(currentStep)}
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={handlePrevStep}
+                disabled={currentStep === 0}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: currentStep === 0 ? 'not-allowed' : 'pointer',
+                  background: currentStep === 0 ? '#ccc' : '#667eea',
+                  color: '#ffffff',
+                  opacity: currentStep === 0 ? 0.5 : 1,
+                }}
+              >
+                ⬅️ Previous
+              </button>
+              <button
+                onClick={handleNextStep}
+                disabled={currentStep === 7}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: currentStep === 7 ? 'not-allowed' : 'pointer',
+                  background: currentStep === 7 ? '#ccc' : '#667eea',
+                  color: '#ffffff',
+                  opacity: currentStep === 7 ? 0.5 : 1,
+                }}
+              >
+                Next ➡️
+              </button>
+            </div>
+            <div style={{ fontSize: '12px', color: '#666' }}>
+              Step {currentStep} of 7
+            </div>
+          </div>
+        )}
+
+        {/* Auto Play Controls */}
+        {!stepByStepMode && (
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <PlayButton
+              onClick={handlePlayAnimation}
+              disabled={isAnimating}
+              whileHover={{ scale: isAnimating ? 1 : 1.05 }}
+              whileTap={{ scale: isAnimating ? 1 : 0.95 }}
+            >
+              {isAnimating ? (
+                <>
+                  <span>▶️</span>
+                  <span>Animation Playing...</span>
+                </>
+              ) : (
+                <>
+                  <span>▶️</span>
+                  <span>Play Animation</span>
+                </>
+              )}
+            </PlayButton>
+
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: '#666' }}>Speed:</span>
+              <button
+                onClick={() => setAnimationSpeed(1)}
+                disabled={isAnimating}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: isAnimating ? 'not-allowed' : 'pointer',
+                  background: animationSpeed === 1 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#e0e0e0',
+                  color: animationSpeed === 1 ? '#ffffff' : '#666',
+                  opacity: isAnimating ? 0.5 : 1,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                1x
+              </button>
+              <button
+                onClick={() => setAnimationSpeed(0.5)}
+                disabled={isAnimating}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: isAnimating ? 'not-allowed' : 'pointer',
+                  background: animationSpeed === 0.5 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#e0e0e0',
+                  color: animationSpeed === 0.5 ? '#ffffff' : '#666',
+                  opacity: isAnimating ? 0.5 : 1,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                1/2x
+              </button>
+              <button
+                onClick={() => setAnimationSpeed(0.25)}
+                disabled={isAnimating}
+                style={{
+                  padding: '8px 16px',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: isAnimating ? 'not-allowed' : 'pointer',
+                  background: animationSpeed === 0.25 ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : '#e0e0e0',
+                  color: animationSpeed === 0.25 ? '#ffffff' : '#666',
+                  opacity: isAnimating ? 0.5 : 1,
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                1/4x
+              </button>
+            </div>
+          </div>
+        )}
 
         {showStatus && (
           <StatusMessage
@@ -173,6 +317,8 @@ export const AnimationTestPage: React.FC = () => {
         minDays={3}
         requireContiguous={true}
         animationSpeed={animationSpeed}
+        stepByStepMode={stepByStepMode}
+        currentStep={currentStep}
       />
 
       {selectedDays.length > 0 && (

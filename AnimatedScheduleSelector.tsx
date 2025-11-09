@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SearchScheduleSelector } from './SearchScheduleSelector';
 import type { SearchScheduleSelectorProps, Day } from './types';
 import {
   AnimationContainer,
@@ -54,6 +55,10 @@ export interface AnimatedScheduleSelectorProps extends SearchScheduleSelectorPro
   onAnimationComplete?: () => void;
   /** Animation speed multiplier (1 = normal, 0.5 = half speed, 0.25 = quarter speed) */
   animationSpeed?: number;
+  /** Step-by-step mode for debugging */
+  stepByStepMode?: boolean;
+  /** Current step in step-by-step mode (0-7) */
+  currentStep?: number;
 }
 
 /**
@@ -70,6 +75,8 @@ export const AnimatedScheduleSelector: React.FC<AnimatedScheduleSelectorProps> =
   enableAnimation = false,
   onAnimationComplete,
   animationSpeed = 1,
+  stepByStepMode = false,
+  currentStep = 0,
   ...selectorProps
 }) => {
   const [animationState, setAnimationState] = useState<'idle' | 'expanding' | 'showing-patterns' | 'collapsing' | 'complete'>('idle');
@@ -103,10 +110,69 @@ export const AnimatedScheduleSelector: React.FC<AnimatedScheduleSelectorProps> =
   }, []);
 
   /**
-   * Animation sequence orchestration
+   * Handle step-by-step mode updates
    */
   useEffect(() => {
-    if (!enableAnimation || animationState === 'idle') return;
+    if (!stepByStepMode) return;
+
+    // Map step to animation state
+    if (currentStep === 0) {
+      setAnimationState('idle');
+      setIsInteractive(true);
+    } else if (currentStep === 1) {
+      setAnimationState('expanding');
+      setIsInteractive(false);
+    } else if (currentStep >= 2 && currentStep <= 5) {
+      setAnimationState('showing-patterns');
+      setCurrentPatternIndex(currentStep - 2); // Steps 2-5 -> patterns 0-3
+      setIsInteractive(false);
+    } else if (currentStep === 6) {
+      setAnimationState('collapsing');
+      setIsInteractive(false);
+    } else if (currentStep === 7) {
+      setAnimationState('complete');
+      setIsInteractive(true);
+      setWeekSelections([
+        Array(7).fill(false),
+        Array(7).fill(false),
+        Array(7).fill(false),
+        Array(7).fill(false),
+      ]);
+    }
+  }, [stepByStepMode, currentStep]);
+
+  /**
+   * Update week selections when pattern index changes (for step-by-step mode)
+   */
+  useEffect(() => {
+    if (!stepByStepMode || animationState !== 'showing-patterns') return;
+
+    const pattern = ANIMATION_PATTERNS[currentPatternIndex];
+    const newSelections = [0, 1, 2, 3].map((weekIndex) => {
+      const weekSelection = Array(7).fill(false);
+      if (pattern.weeks) {
+        // Only apply to specific weeks
+        if (pattern.weeks.includes(weekIndex)) {
+          pattern.selection.forEach(dayIndex => {
+            weekSelection[dayIndex] = true;
+          });
+        }
+      } else {
+        // Apply to all weeks
+        pattern.selection.forEach(dayIndex => {
+          weekSelection[dayIndex] = true;
+        });
+      }
+      return weekSelection;
+    });
+    setWeekSelections(newSelections);
+  }, [stepByStepMode, animationState, currentPatternIndex]);
+
+  /**
+   * Animation sequence orchestration (auto-play mode only)
+   */
+  useEffect(() => {
+    if (!enableAnimation || animationState === 'idle' || stepByStepMode) return;
 
     let timeoutId: ReturnType<typeof setTimeout>;
 
@@ -176,7 +242,7 @@ export const AnimatedScheduleSelector: React.FC<AnimatedScheduleSelectorProps> =
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [animationState, currentPatternIndex, enableAnimation, onAnimationComplete, timing]);
+  }, [animationState, currentPatternIndex, enableAnimation, onAnimationComplete, timing, stepByStepMode]);
 
   /**
    * Auto-start animation on mount if enabled
@@ -206,61 +272,91 @@ export const AnimatedScheduleSelector: React.FC<AnimatedScheduleSelectorProps> =
 
   return (
     <AnimationContainer>
-      <ExpandableGridContainer
-        $isExpanded={showAnimatedCalendar}
-        $expandDuration={timing.EXPAND_DURATION / 1000}
-        $collapseDuration={timing.COLLAPSE_DURATION / 1000}
-        style={{ pointerEvents: isInteractive ? 'auto' : 'none' }}
-      >
-        <CalendarGrid $isVisible={showAnimatedCalendar}>
-          {/* Calendar icon */}
-          <div style={{
-            fontSize: '32px',
-            gridColumn: '1 / 2',
-            gridRow: '1 / 6',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-            📅
-          </div>
+      {/* The core SearchScheduleSelector - ALWAYS VISIBLE */}
+      <SearchScheduleSelector
+        {...selectorProps}
+        hideInfoDuringAnimation={showAnimatedCalendar}
+      />
 
-          {/* Day headers - S, M, T, W, T, F, S */}
-          {DAYS_OF_WEEK.map((day, index) => (
-            <DayHeaderButton key={`header-${day.id}`}>
-              {day.singleLetter}
-            </DayHeaderButton>
-          ))}
+      {/* Animation overlay - expands from and collapses into selector */}
+      <AnimatePresence>
+        {showAnimatedCalendar && (
+          <ExpandableGridContainer
+            $isExpanded={showAnimatedCalendar}
+            $expandDuration={timing.EXPAND_DURATION / 1000}
+            $collapseDuration={timing.COLLAPSE_DURATION / 1000}
+            style={{ pointerEvents: 'none' }}
+            initial={{
+              scaleY: 0.1,
+              opacity: 0,
+              transformOrigin: 'center center'
+            }}
+            animate={{
+              scaleY: animationState === 'collapsing' ? 0.1 : 1,
+              opacity: animationState === 'collapsing' ? 0 : 1,
+              transformOrigin: 'center center'
+            }}
+            exit={{
+              scaleY: 0.1,
+              opacity: 0,
+              transformOrigin: 'center center'
+            }}
+            transition={{
+              duration: animationState === 'collapsing' ? timing.COLLAPSE_DURATION / 1000 : timing.EXPAND_DURATION / 1000,
+              ease: 'easeInOut'
+            }}
+          >
+            <CalendarGrid $isVisible={showAnimatedCalendar}>
+              {/* Calendar icon */}
+              <div style={{
+                fontSize: '32px',
+                gridColumn: '1 / 2',
+                gridRow: '1 / 6',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+                📅
+              </div>
 
-          {/* Week buttons - 4 weeks × 7 days = 28 buttons */}
-          {[0, 1, 2, 3].map((weekIndex) => (
-            DAYS_OF_WEEK.map((day, dayIndex) => (
-              <WeekButton
-                key={`week-${weekIndex}-day-${dayIndex}`}
-                $isSelected={isButtonSelected(weekIndex, dayIndex)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-              >
-                {day.singleLetter}
-              </WeekButton>
-            ))
-          ))}
-        </CalendarGrid>
+              {/* Day headers - S, M, T, W, T, F, S */}
+              {DAYS_OF_WEEK.map((day, index) => (
+                <DayHeaderButton key={`header-${day.id}`}>
+                  {day.singleLetter}
+                </DayHeaderButton>
+              ))}
 
-        {/* Pattern label - shown during pattern animation */}
-        <AnimatePresence>
-          {showAnimatedCalendar && animationState === 'showing-patterns' && (
-            <PatternLabel
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-            >
-              Pattern: {ANIMATION_PATTERNS[currentPatternIndex].name}
-            </PatternLabel>
-          )}
-        </AnimatePresence>
-      </ExpandableGridContainer>
+              {/* Week buttons - 4 weeks × 7 days = 28 buttons */}
+              {[0, 1, 2, 3].map((weekIndex) => (
+                DAYS_OF_WEEK.map((day, dayIndex) => (
+                  <WeekButton
+                    key={`week-${weekIndex}-day-${dayIndex}`}
+                    $isSelected={isButtonSelected(weekIndex, dayIndex)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {day.singleLetter}
+                  </WeekButton>
+                ))
+              ))}
+            </CalendarGrid>
+
+            {/* Pattern label - shown during pattern animation */}
+            <AnimatePresence>
+              {animationState === 'showing-patterns' && (
+                <PatternLabel
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  Pattern: {ANIMATION_PATTERNS[currentPatternIndex].name}
+                </PatternLabel>
+              )}
+            </AnimatePresence>
+          </ExpandableGridContainer>
+        )}
+      </AnimatePresence>
     </AnimationContainer>
   );
 };

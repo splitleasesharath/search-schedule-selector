@@ -4,24 +4,30 @@ import { motion } from 'framer-motion';
 export const AnimationContainer = styled.div`
   position: relative;
   width: 100%;
+  min-height: 100px; /* Reserve space for the selector */
 `;
 
-export const ExpandableGridContainer = styled.div<{
+export const ExpandableGridContainer = styled(motion.div)<{
   $isExpanded: boolean;
   $expandDuration: number;
   $collapseDuration: number;
 }>`
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   width: 100%;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: ${props => props.$isExpanded ? '8px' : '0px'};
-  transition: gap ${props => props.$isExpanded ? props.$expandDuration : props.$collapseDuration}s ease-in-out;
   overflow: ${props => props.$isExpanded ? 'visible' : 'hidden'};
   padding: ${props => props.$isExpanded ? '24px' : '0px'};
   background: ${props => props.$isExpanded ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent'};
   border-radius: ${props => props.$isExpanded ? '16px' : '0px'};
   transition: all ${props => props.$isExpanded ? props.$expandDuration : props.$collapseDuration}s ease-in-out;
+  z-index: 10; /* Ensure it appears on top of selector */
 `;
 
 export const CalendarGrid = styled.div<{ $isVisible: boolean }>`
