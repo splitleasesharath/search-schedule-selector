@@ -22,12 +22,30 @@ const DAYS_OF_WEEK: Day[] = [
 
 /**
  * Animation patterns for the schedule selector
+ * Each pattern can have multiple stages to show the progression
  */
 const ANIMATION_PATTERNS = [
+  // Pattern 1: Every Week (1 stage)
   { name: 'Every Week', selection: [1, 2, 3, 4, 5] }, // Mon-Fri (5 nights)
-  { name: 'Every Other Week', selection: [1, 2, 3, 4], weeks: [0, 2] }, // Mon-Thu on weeks 1 & 3
-  { name: '2 Weeks On, 2 Weeks Off', selection: [0, 1, 2, 3], weeks: [0, 1] }, // Sun-Wed on weeks 1 & 2
-  { name: '1 Week On, 3 Weeks Off', selection: [4, 5, 6], weeks: [0] }, // Thu-Sat on week 1 only
+
+  // Pattern 2: Every Other Week (2 stages)
+  // Stage 1: Show weekdays in rows 2 & 4 (weeks 0 & 2)
+  { name: 'Every Other Week - Option A', selection: [1, 2, 3, 4, 5], weeks: [0, 2] }, // Mon-Fri in weeks 1 & 3
+  // Stage 2: Show weekdays in rows 3 & 5 (weeks 1 & 3) - the alternate pattern
+  { name: 'Every Other Week - Option B', selection: [1, 2, 3, 4, 5], weeks: [1, 3] }, // Mon-Fri in weeks 2 & 4
+
+  // Pattern 3: 2 Weeks On, 2 Weeks Off (2 stages)
+  // Stage 1: Show Sun, Mon, Fri, Sat in rows 2 & 3 (weeks 0 & 1)
+  { name: '2 Weeks On, 2 Weeks Off - Option A', selection: [0, 1, 5, 6], weeks: [0, 1] }, // Sun, Mon, Fri, Sat in weeks 1 & 2
+  // Stage 2: Show Sun, Mon, Fri, Sat in rows 4 & 5 (weeks 2 & 3) - the alternate pattern
+  { name: '2 Weeks On, 2 Weeks Off - Option B', selection: [0, 1, 5, 6], weeks: [2, 3] }, // Sun, Mon, Fri, Sat in weeks 3 & 4
+
+  // Pattern 4: 1 Week On, 3 Weeks Off (4 stages - cycle through each week)
+  // Only one week is active at a time, showing the rotation
+  { name: '1 Week On, 3 Weeks Off - Week 1', selection: [4, 5, 6], weeks: [0] }, // Thu-Sat on week 1
+  { name: '1 Week On, 3 Weeks Off - Week 2', selection: [4, 5, 6], weeks: [1] }, // Thu-Sat on week 2
+  { name: '1 Week On, 3 Weeks Off - Week 3', selection: [4, 5, 6], weeks: [2] }, // Thu-Sat on week 3
+  { name: '1 Week On, 3 Weeks Off - Week 4', selection: [4, 5, 6], weeks: [3] }, // Thu-Sat on week 4
 ];
 
 /**
@@ -53,19 +71,27 @@ export interface AnimatedScheduleSelectorProps extends SearchScheduleSelectorPro
   animationSpeed?: number;
   /** Step-by-step mode for debugging */
   stepByStepMode?: boolean;
-  /** Current step in step-by-step mode (0-7) */
+  /** Current step in step-by-step mode (0-13) */
   currentStep?: number;
 }
 
 /**
  * AnimatedScheduleSelector - Calendar view with intro animation
  *
- * Animation sequence:
- * 1. Purple container expands
- * 2. Calendar shows with 7 day headers + 28 date buttons (4 weeks × 7 days)
- * 3. Cycles through different weekly patterns
- * 4. Container collapses back
- * 5. Returns to normal interactive state
+ * Animation sequence (14 steps total: 0-13):
+ * Step 0: Idle state
+ * Step 1: Purple container expands, calendar shows with 7 day headers + 28 date buttons (4 weeks × 7 days)
+ * Step 2: Pattern 1 - Every Week (Mon-Fri in all weeks)
+ * Step 3-4: Pattern 2 - Every Other Week (2 alternating options):
+ *   - Step 3: Weekdays in rows 2&4 (weeks 1&3)
+ *   - Step 4: Weekdays in rows 3&5 (weeks 2&4) - shows alternate configuration
+ * Step 5-6: Pattern 3 - 2 Weeks On/Off (2 alternating options):
+ *   - Step 5: Sun,Mon,Fri,Sat in rows 2&3 (weeks 1&2)
+ *   - Step 6: Sun,Mon,Fri,Sat in rows 4&5 (weeks 3&4) - shows alternate configuration
+ * Step 7-10: Pattern 4 - 1 Week On, 3 Weeks Off (4 stages: cycle through weeks 1→2→3→4)
+ *   - Each step shows Thu-Sat in only one week, demonstrating the rotation
+ * Step 11: Container collapses back
+ * Step 12: Returns to normal interactive state
  */
 export const AnimatedScheduleSelector: React.FC<AnimatedScheduleSelectorProps> = ({
   enableAnimation = false,
@@ -118,14 +144,14 @@ export const AnimatedScheduleSelector: React.FC<AnimatedScheduleSelectorProps> =
     } else if (currentStep === 1) {
       setAnimationState('expanding');
       setIsInteractive(false);
-    } else if (currentStep >= 2 && currentStep <= 5) {
+    } else if (currentStep >= 2 && currentStep <= 11) {
       setAnimationState('showing-patterns');
-      setCurrentPatternIndex(currentStep - 2); // Steps 2-5 -> patterns 0-3
+      setCurrentPatternIndex(currentStep - 2); // Steps 2-11 -> patterns 0-9
       setIsInteractive(false);
-    } else if (currentStep === 6) {
+    } else if (currentStep === 12) {
       setAnimationState('collapsing');
       setIsInteractive(false);
-    } else if (currentStep === 7) {
+    } else if (currentStep === 13) {
       setAnimationState('complete');
       setIsInteractive(true);
       setWeekSelections([

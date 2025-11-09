@@ -48,7 +48,7 @@ export const AnimationTestPage: React.FC = () => {
    * Advance to next step in step-by-step mode
    */
   const handleNextStep = () => {
-    setCurrentStep(prev => Math.min(prev + 1, 7)); // 0-7 steps
+    setCurrentStep(prev => Math.min(prev + 1, 13)); // 0-13 steps
   };
 
   /**
@@ -65,12 +65,18 @@ export const AnimationTestPage: React.FC = () => {
     const steps = [
       '0: Initial - Selector visible',
       '1: Expanding - Container grows',
-      '2: Pattern 1 - Every Week',
-      '3: Pattern 2 - Every Other Week',
-      '4: Pattern 3 - 2 Weeks On, 2 Off',
-      '5: Pattern 4 - 1 Week On, 3 Off',
-      '6: Collapsing - Container shrinks',
-      '7: Complete - Back to selector',
+      '2: Pattern 1 - Every Week (Mon-Fri all weeks)',
+      '3: Pattern 2a - Every Other Week (Weekdays in rows 2&4)',
+      '4: Pattern 2b - Every Other Week (Weekdays in rows 3&5)',
+      '5: Pattern 3a - 2 Weeks On/Off (Sun,Mon,Fri,Sat in rows 2&3)',
+      '6: Pattern 3b - 2 Weeks On/Off (Sun,Mon,Fri,Sat in rows 4&5)',
+      '7: Pattern 4a - 1 Week On, 3 Off (Thu-Sat Week 1)',
+      '8: Pattern 4b - 1 Week On, 3 Off (Thu-Sat Week 2)',
+      '9: Pattern 4c - 1 Week On, 3 Off (Thu-Sat Week 3)',
+      '10: Pattern 4d - 1 Week On, 3 Off (Thu-Sat Week 4)',
+      '11: Collapsing - Container shrinks',
+      '12: Complete - Back to selector',
+      '13: Complete - Back to selector',
     ];
     return steps[step] || 'Unknown step';
   };
@@ -191,24 +197,24 @@ export const AnimationTestPage: React.FC = () => {
               </button>
               <button
                 onClick={handleNextStep}
-                disabled={currentStep === 7}
+                disabled={currentStep === 13}
                 style={{
                   padding: '8px 16px',
                   fontSize: '14px',
                   fontWeight: 600,
                   border: 'none',
                   borderRadius: '8px',
-                  cursor: currentStep === 7 ? 'not-allowed' : 'pointer',
-                  background: currentStep === 7 ? '#ccc' : '#667eea',
+                  cursor: currentStep === 13 ? 'not-allowed' : 'pointer',
+                  background: currentStep === 13 ? '#ccc' : '#667eea',
                   color: '#ffffff',
-                  opacity: currentStep === 7 ? 0.5 : 1,
+                  opacity: currentStep === 13 ? 0.5 : 1,
                 }}
               >
                 Next ➡️
               </button>
             </div>
             <div style={{ fontSize: '12px', color: '#666' }}>
-              Step {currentStep} of 7
+              Step {currentStep} of 13
             </div>
           </div>
         )}
@@ -360,20 +366,40 @@ export const AnimationTestPage: React.FC = () => {
             the original with a staggered effect, representing weeks 2, 3, and 4
           </li>
           <li>
-            <strong>Pattern: Every Week (1.2s):</strong> All 4 week grids show Monday-Friday
-            selected
+            <strong>Pattern 1: Every Week (1.2s):</strong> All 4 week grids show Monday-Friday
+            selected (weekdays across all weeks)
           </li>
           <li>
-            <strong>Pattern: Every Other Week (1.2s):</strong> Weeks 1 & 3 show Monday-Thursday
-            selected
+            <strong>Pattern 2a: Every Other Week - Option A (1.2s):</strong> Rows 2 & 4 (Weeks 1 & 3)
+            show Monday-Friday selected (demonstrating alternating week pattern)
           </li>
           <li>
-            <strong>Pattern: 2 Weeks On, 2 Off (1.2s):</strong> Weeks 1 & 2 show
-            Sunday-Wednesday selected
+            <strong>Pattern 2b: Every Other Week - Option B (1.2s):</strong> Rows 3 & 5 (Weeks 2 & 4)
+            show Monday-Friday selected (demonstrating the alternate configuration)
           </li>
           <li>
-            <strong>Pattern: 1 Week On, 3 Off (1.2s):</strong> Only Week 1 shows
-            Thursday-Saturday selected
+            <strong>Pattern 3a: 2 Weeks On, 2 Off - Option A (1.2s):</strong> Rows 2 & 3 (Weeks 1 & 2)
+            show Sunday, Monday, Friday, Saturday selected (2-week block pattern)
+          </li>
+          <li>
+            <strong>Pattern 3b: 2 Weeks On, 2 Off - Option B (1.2s):</strong> Rows 4 & 5 (Weeks 3 & 4)
+            show Sunday, Monday, Friday, Saturday selected (alternate 2-week block)
+          </li>
+          <li>
+            <strong>Pattern 4a: 1 Week On, 3 Off - Week 1 (1.2s):</strong> Only Week 1 shows
+            Thursday-Saturday selected (1 active week, 3 off)
+          </li>
+          <li>
+            <strong>Pattern 4b: 1 Week On, 3 Off - Week 2 (1.2s):</strong> Selection shifts -
+            only Week 2 shows Thursday-Saturday selected (rotation in progress)
+          </li>
+          <li>
+            <strong>Pattern 4c: 1 Week On, 3 Off - Week 3 (1.2s):</strong> Selection shifts -
+            only Week 3 shows Thursday-Saturday selected (rotation continues)
+          </li>
+          <li>
+            <strong>Pattern 4d: 1 Week On, 3 Off - Week 4 (1.2s):</strong> Selection shifts -
+            only Week 4 shows Thursday-Saturday selected (rotation completes)
           </li>
           <li>
             <strong>Grids Swoop Up (0.3s each):</strong> The 3 additional grids swoop back up
