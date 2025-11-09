@@ -65,7 +65,6 @@ export const CalendarGrid = styled.div`
   backdrop-filter: blur(10px);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  flex: 1;
 
   @media (max-width: 768px) {
     gap: 6px;
