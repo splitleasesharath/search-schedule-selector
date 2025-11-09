@@ -35,6 +35,65 @@ const DAYS_OF_WEEK: Day[] = [
 ];
 
 /**
+ * Animation variants for smooth transitions
+ */
+const dayHeaderVariants = {
+  hidden: {
+    opacity: 0,
+    y: -20,
+    scale: 0.8
+  },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      delay: i * 0.05,
+      duration: 0.4,
+      ease: [0.4, 0, 0.2, 1]
+    }
+  }),
+  exit: (i: number) => ({
+    opacity: 0,
+    y: -20,
+    scale: 0.8,
+    transition: {
+      delay: (6 - i) * 0.03,
+      duration: 0.3,
+      ease: [0.4, 0, 1, 1]
+    }
+  })
+};
+
+const weekButtonVariants = {
+  hidden: {
+    opacity: 0,
+    y: 20,
+    scale: 0.9
+  },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      delay: 0.35 + (i * 0.015),
+      duration: 0.35,
+      ease: [0.4, 0, 0.2, 1]
+    }
+  }),
+  exit: (i: number) => ({
+    opacity: 0,
+    y: 15,
+    scale: 0.9,
+    transition: {
+      delay: (27 - i) * 0.01,
+      duration: 0.25,
+      ease: [0.4, 0, 1, 1]
+    }
+  })
+};
+
+/**
  * SearchScheduleSelector Component
  *
  * A weekly schedule selector for split-lease arrangements.
@@ -430,61 +489,87 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
 
 
   return (
-    <Container className={className}>
+    <Container
+      className={className}
+      layout
+      transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+    >
       <SelectorRow>
         <CalendarIcon>📅</CalendarIcon>
 
-        <DaysGrid $isExpanded={showAnimatedCalendar}>
-          {showAnimatedCalendar ? (
-            <>
-              {/* Day headers - S, M, T, W, T, F, S */}
-              {DAYS_OF_WEEK.map((day) => (
-                <DayHeader key={`header-${day.id}`}>
-                  {day.singleLetter}
-                </DayHeader>
-              ))}
+        <DaysGrid
+          $isExpanded={showAnimatedCalendar}
+          layout
+          transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+        >
+          <AnimatePresence mode="wait">
+            {showAnimatedCalendar ? (
+              <React.Fragment key="expanded-calendar">
+                {/* Day headers - S, M, T, W, T, F, S */}
+                {DAYS_OF_WEEK.map((day, index) => (
+                  <DayHeader
+                    key={`header-${day.id}`}
+                    custom={index}
+                    variants={dayHeaderVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                  >
+                    {day.singleLetter}
+                  </DayHeader>
+                ))}
 
-              {/* Week buttons - 4 weeks × 7 days = 28 buttons */}
-              {[0, 1, 2, 3].map((weekIndex) => (
-                DAYS_OF_WEEK.map((day, dayIndex) => (
-                  <WeekDayButton
-                    key={`week-${weekIndex}-day-${dayIndex}`}
-                    $isSelected={isButtonSelected ? isButtonSelected(weekIndex, dayIndex) : false}
+                {/* Week buttons - 4 weeks × 7 days = 28 buttons */}
+                {[0, 1, 2, 3].map((weekIndex) => (
+                  DAYS_OF_WEEK.map((day, dayIndex) => {
+                    const buttonIndex = weekIndex * 7 + dayIndex;
+                    return (
+                      <WeekDayButton
+                        key={`week-${weekIndex}-day-${dayIndex}`}
+                        custom={buttonIndex}
+                        variants={weekButtonVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        $isSelected={isButtonSelected ? isButtonSelected(weekIndex, dayIndex) : false}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {day.singleLetter}
+                      </WeekDayButton>
+                    );
+                  })
+                ))}
+              </React.Fragment>
+            ) : (
+              /* Regular day selector buttons */
+              <React.Fragment key="compact-selector">
+                {DAYS_OF_WEEK.map((day, index) => (
+                  <DayCell
+                    key={day.id}
+                    $isSelected={selectedDays.has(index)}
+                    $isDragging={isDragging}
+                    $hasError={hasContiguityError}
+                    $errorStyle={1}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleMouseDown(index);
+                    }}
+                    onMouseEnter={() => handleMouseEnter(index)}
+                    onMouseUp={() => handleMouseUp(index)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     transition={{ duration: 0.2 }}
+                    role="button"
+                    aria-pressed={selectedDays.has(index)}
+                    aria-label={`Select ${day.fullName}`}
                   >
                     {day.singleLetter}
-                  </WeekDayButton>
-                ))
-              ))}
-            </>
-          ) : (
-            /* Regular day selector buttons */
-            DAYS_OF_WEEK.map((day, index) => (
-              <DayCell
-                key={day.id}
-                $isSelected={selectedDays.has(index)}
-                $isDragging={isDragging}
-                $hasError={hasContiguityError}
-                $errorStyle={1}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  handleMouseDown(index);
-                }}
-                onMouseEnter={() => handleMouseEnter(index)}
-                onMouseUp={() => handleMouseUp(index)}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                role="button"
-                aria-pressed={selectedDays.has(index)}
-                aria-label={`Select ${day.fullName}`}
-              >
-                {day.singleLetter}
-              </DayCell>
-            ))
-          )}
+                  </DayCell>
+                ))}
+              </React.Fragment>
+            )}
+          </AnimatePresence>
         </DaysGrid>
       </SelectorRow>
 

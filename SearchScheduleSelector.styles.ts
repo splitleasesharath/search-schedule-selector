@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 import { motion } from 'framer-motion';
 
-export const Container = styled.div`
+export const Container = styled(motion.div)`
   position: relative;
   display: flex;
   flex-direction: column;
@@ -11,6 +11,7 @@ export const Container = styled.div`
   border-radius: 16px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
   user-select: none;
+  overflow: hidden;
 
   @media (max-width: 768px) {
     padding: 16px;
@@ -30,7 +31,7 @@ export const CalendarIcon = styled.div`
   flex-shrink: 0;
 `;
 
-export const DaysGrid = styled.div<{ $isExpanded?: boolean }>`
+export const DaysGrid = styled(motion.div)<{ $isExpanded?: boolean }>`
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   grid-template-rows: ${props => props.$isExpanded ? 'auto repeat(4, 1fr)' : '1fr'};
@@ -40,7 +41,6 @@ export const DaysGrid = styled.div<{ $isExpanded?: boolean }>`
   backdrop-filter: blur(10px);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
 
   @media (max-width: 768px) {
     gap: 6px;
@@ -48,7 +48,7 @@ export const DaysGrid = styled.div<{ $isExpanded?: boolean }>`
   }
 `;
 
-export const DayHeader = styled.div`
+export const DayHeader = styled(motion.div)`
   width: 48px;
   height: 48px;
   display: flex;
