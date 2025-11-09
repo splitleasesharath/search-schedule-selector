@@ -4,6 +4,7 @@
  */
 
 export { SearchScheduleSelector } from './SearchScheduleSelector';
+export { AnimatedScheduleSelector } from './AnimatedScheduleSelector';
 export { default } from './SearchScheduleSelector';
 export type {
   Day,
@@ -12,3 +13,4 @@ export type {
   ValidationResult,
   ListingCount,
 } from './types';
+export type { AnimatedScheduleSelectorProps } from './AnimatedScheduleSelector';

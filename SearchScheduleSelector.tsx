@@ -53,6 +53,7 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   minDays = 3,
   requireContiguous = true,
   initialSelection = [],
+  hideInfoDuringAnimation = false,
 }) => {
   const [selectedDays, setSelectedDays] = useState<Set<number>>(
     new Set(initialSelection)
@@ -455,16 +456,18 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
         </DaysGrid>
       </SelectorRow>
 
-      <InfoContainer>
-        {selectedDays.size > 0 && checkinDay && checkoutDay && (
-          <>
-            <InfoText>
-              <strong>Check-in:</strong> {checkinDay} • <strong>Check-out:</strong> {checkoutDay}
-            </InfoText>
-            <ResetButton onClick={handleReset}>Clear selection</ResetButton>
-          </>
-        )}
-      </InfoContainer>
+      {!hideInfoDuringAnimation && (
+        <InfoContainer>
+          {selectedDays.size > 0 && checkinDay && checkoutDay && (
+            <>
+              <InfoText>
+                <strong>Check-in:</strong> {checkinDay} • <strong>Check-out:</strong> {checkoutDay}
+              </InfoText>
+              <ResetButton onClick={handleReset}>Clear selection</ResetButton>
+            </>
+          )}
+        </InfoContainer>
+      )}
 
       <AnimatePresence>
         {showError && (

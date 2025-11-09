@@ -45,6 +45,9 @@ export interface SearchScheduleSelectorProps {
 
   /** Initial selected days (array of day indices 0-6) */
   initialSelection?: number[];
+
+  /** Hide info container during animation */
+  hideInfoDuringAnimation?: boolean;
 }
 
 /**
