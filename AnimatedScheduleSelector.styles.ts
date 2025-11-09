@@ -24,36 +24,87 @@ export const ExpandableGridContainer = styled.div<{
   transition: all ${props => props.$isExpanded ? props.$expandDuration : props.$collapseDuration}s ease-in-out;
 `;
 
-export const AdditionalGrid = styled.div`
+export const CalendarGrid = styled.div<{ $isVisible: boolean }>`
+  display: ${props => props.$isVisible ? 'grid' : 'none'};
+  grid-template-columns: auto repeat(7, 1fr);
+  grid-template-rows: auto repeat(4, 1fr);
+  gap: 8px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
   width: 100%;
-  padding: 0;
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-`;
-
-export const WeekIndicator = styled(motion.div)`
-  position: relative;
-  flex-shrink: 0;
-  width: 60px;
-  font-size: 11px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.95);
-  background: rgba(255, 255, 255, 0.15);
-  padding: 4px 8px;
-  border-radius: 8px;
-  z-index: 20;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  white-space: nowrap;
-  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 
   @media (max-width: 768px) {
-    font-size: 10px;
-    padding: 2px 6px;
-    width: 50px;
+    gap: 6px;
+    padding: 12px;
+  }
+`;
+
+export const DayHeaderButton = styled.div`
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  @media (max-width: 768px) {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+`;
+
+export const WeekButton = styled(motion.button)<{ $isSelected: boolean }>`
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 16px;
+  border: none;
+  border-radius: 12px;
+  cursor: default;
+  background: ${props => props.$isSelected
+    ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+    : 'rgba(255, 255, 255, 0.9)'};
+  color: ${props => props.$isSelected ? '#ffffff' : '#333333'};
+  box-shadow: ${props => props.$isSelected
+    ? '0 4px 12px rgba(102, 126, 234, 0.4)'
+    : '0 2px 8px rgba(0, 0, 0, 0.1)'};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+  @media (max-width: 768px) {
+    width: 40px;
+    height: 40px;
+    font-size: 14px;
+  }
+`;
+
+export const PatternLabel = styled(motion.div)`
+  margin-top: 16px;
+  padding: 12px 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 12px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #667eea;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+  @media (max-width: 768px) {
+    font-size: 13px;
+    padding: 10px 16px;
   }
 `;
 
@@ -154,5 +205,50 @@ export const StatusMessage = styled(motion.div)`
 
   @media (max-width: 768px) {
     font-size: 13px;
+  }
+`;
+
+export const ToggleContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+export const ToggleLabel = styled.label`
+  font-size: 14px;
+  font-weight: 600;
+  color: #666;
+  cursor: pointer;
+`;
+
+export const ToggleSwitch = styled.input.attrs({ type: 'checkbox' })`
+  width: 48px;
+  height: 24px;
+  position: relative;
+  appearance: none;
+  background: #ccc;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+
+  &:checked {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    top: 2px;
+    left: 2px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  &:checked::before {
+    transform: translateX(24px);
   }
 `;
