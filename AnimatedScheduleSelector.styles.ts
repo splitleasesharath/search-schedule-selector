@@ -30,11 +30,10 @@ export const ExpandableGridContainer = styled(motion.div)<{
   z-index: 10; /* Ensure it appears on top of selector */
 `;
 
-export const CalendarGrid = styled.div<{ $isVisible: boolean }>`
-  display: ${props => props.$isVisible ? 'grid' : 'none'};
-  grid-template-columns: auto repeat(7, 1fr);
-  grid-template-rows: auto repeat(4, 1fr);
-  gap: 8px;
+export const CalendarRow = styled.div<{ $isVisible: boolean }>`
+  display: ${props => props.$isVisible ? 'flex' : 'none'};
+  align-items: flex-start;
+  gap: 16px;
   padding: 16px;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
@@ -44,8 +43,33 @@ export const CalendarGrid = styled.div<{ $isVisible: boolean }>`
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 
   @media (max-width: 768px) {
-    gap: 6px;
+    gap: 12px;
     padding: 12px;
+  }
+`;
+
+export const CalendarIconWrapper = styled.div`
+  font-size: 32px;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  flex-shrink: 0;
+  padding-top: 8px; /* Align with grid padding */
+`;
+
+export const CalendarGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: auto repeat(4, 1fr);
+  gap: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  flex: 1;
+
+  @media (max-width: 768px) {
+    gap: 6px;
+    padding: 6px;
   }
 `;
 

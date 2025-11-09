@@ -5,6 +5,8 @@ import type { SearchScheduleSelectorProps, Day } from './types';
 import {
   AnimationContainer,
   ExpandableGridContainer,
+  CalendarRow,
+  CalendarIconWrapper,
   CalendarGrid,
   DayHeaderButton,
   WeekButton,
@@ -306,41 +308,37 @@ export const AnimatedScheduleSelector: React.FC<AnimatedScheduleSelectorProps> =
               ease: 'easeInOut'
             }}
           >
-            <CalendarGrid $isVisible={showAnimatedCalendar}>
+            <CalendarRow $isVisible={showAnimatedCalendar}>
               {/* Calendar icon */}
-              <div style={{
-                fontSize: '32px',
-                gridColumn: '1 / 2',
-                gridRow: '1 / 6',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
+              <CalendarIconWrapper>
                 📅
-              </div>
+              </CalendarIconWrapper>
 
-              {/* Day headers - S, M, T, W, T, F, S */}
-              {DAYS_OF_WEEK.map((day, index) => (
-                <DayHeaderButton key={`header-${day.id}`}>
-                  {day.singleLetter}
-                </DayHeaderButton>
-              ))}
-
-              {/* Week buttons - 4 weeks × 7 days = 28 buttons */}
-              {[0, 1, 2, 3].map((weekIndex) => (
-                DAYS_OF_WEEK.map((day, dayIndex) => (
-                  <WeekButton
-                    key={`week-${weekIndex}-day-${dayIndex}`}
-                    $isSelected={isButtonSelected(weekIndex, dayIndex)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                  >
+              {/* Calendar grid with day headers and week buttons */}
+              <CalendarGrid>
+                {/* Day headers - S, M, T, W, T, F, S */}
+                {DAYS_OF_WEEK.map((day, index) => (
+                  <DayHeaderButton key={`header-${day.id}`}>
                     {day.singleLetter}
-                  </WeekButton>
-                ))
-              ))}
-            </CalendarGrid>
+                  </DayHeaderButton>
+                ))}
+
+                {/* Week buttons - 4 weeks × 7 days = 28 buttons */}
+                {[0, 1, 2, 3].map((weekIndex) => (
+                  DAYS_OF_WEEK.map((day, dayIndex) => (
+                    <WeekButton
+                      key={`week-${weekIndex}-day-${dayIndex}`}
+                      $isSelected={isButtonSelected(weekIndex, dayIndex)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {day.singleLetter}
+                    </WeekButton>
+                  ))
+                ))}
+              </CalendarGrid>
+            </CalendarRow>
 
             {/* Pattern label - shown during pattern animation */}
             <AnimatePresence>
