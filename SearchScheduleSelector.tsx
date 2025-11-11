@@ -50,7 +50,7 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   onSelectionChange,
   onError,
   className,
-  minDays = 3,
+  minDays = 2,
   requireContiguous = true,
   initialSelection = [],
 }) => {
@@ -463,13 +463,18 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
       </SelectorRow>
 
       <InfoContainer>
-        {selectedDays.size > 0 && checkinDay && checkoutDay && (
-          <>
-            <InfoText>
-              <strong>Check-in:</strong> <span className="day-name">{checkinDay}</span> • <strong>Check-out:</strong> <span className="day-name">{checkoutDay}</span>
-            </InfoText>
-            <ResetButton onClick={handleReset}>Clear selection</ResetButton>
-          </>
+        {selectedDays.size > 0 && (
+          <InfoText>
+            {selectedDays.size === 7 ? (
+              <span className="day-name">Full Time</span>
+            ) : (
+              checkinDay && checkoutDay && (
+                <>
+                  <strong>Check-in:</strong> <span className="day-name">{checkinDay}</span> • <strong>Check-out:</strong> <span className="day-name">{checkoutDay}</span>
+                </>
+              )
+            )}
+          </InfoText>
         )}
       </InfoContainer>
 
