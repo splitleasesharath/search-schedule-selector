@@ -5,44 +5,45 @@ export const Container = styled.div`
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 16px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  gap: 12px;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
   user-select: none;
 
   @media (max-width: 768px) {
-    padding: 16px;
-    border-radius: 12px;
+    padding: 0;
   }
 `;
 
 export const SelectorRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 0 12px 0;
 `;
 
 export const CalendarIcon = styled.div`
-  font-size: 32px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  width: 35px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 35px;
+  margin-right: 8px;
   flex-shrink: 0;
 `;
 
 export const DaysGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-  padding: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
 
   @media (max-width: 768px) {
     gap: 6px;
-    padding: 6px;
   }
 `;
 
@@ -52,23 +53,25 @@ export const DayCell = styled(motion.button)<{
   $hasError?: boolean;
   $errorStyle?: 1 | 2 | 3;
 }>`
-  width: 48px;
-  height: 48px;
+  width: 35px;
+  height: 35px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: "Inter", Helvetica, Arial, sans-serif;
   font-weight: 600;
-  font-size: 16px;
+  font-size: 14px;
+  line-height: 16px;
   border: none;
-  border-radius: 12px;
+  border-radius: 8px;
   cursor: ${props => props.$isDragging ? 'grabbing' : 'pointer'};
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.2s ease-in-out, background 0.2s ease-in-out;
+  box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
 
-  /* Style 1: Red gradient background */
-  ${props => props.$hasError && props.$errorStyle === 1 && props.$isSelected && `
-    background: linear-gradient(135deg, #f93a5a 0%, #d32f2f 100%) !important;
+  /* Error state styling */
+  ${props => props.$hasError && props.$isSelected && `
+    background-color: #d32f2f !important;
     color: #ffffff !important;
-    box-shadow: 0 4px 12px rgba(249, 58, 90, 0.4) !important;
     animation: pulse-error 1.5s ease-in-out infinite;
 
     @keyframes pulse-error {
@@ -77,55 +80,13 @@ export const DayCell = styled(motion.button)<{
     }
   `}
 
-  /* Style 2: Red border with shake */
-  ${props => props.$hasError && props.$errorStyle === 2 && props.$isSelected && `
-    border: 2px solid #d32f2f !important;
-    background: rgba(255, 255, 255, 0.9) !important;
-    color: #d32f2f !important;
-    box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.2) !important;
-    animation: shake 0.5s ease-in-out;
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-4px); }
-      75% { transform: translateX(4px); }
-    }
-  `}
-
-  /* Style 3: Striped pattern */
-  ${props => props.$hasError && props.$errorStyle === 3 && props.$isSelected && `
-    background: repeating-linear-gradient(
-      45deg,
-      #667eea,
-      #667eea 10px,
-      #d32f2f 10px,
-      #d32f2f 20px
-    ) !important;
-    color: #ffffff !important;
-    box-shadow: 0 4px 12px rgba(211, 47, 47, 0.4) !important;
-  `}
-
-  /* Normal selected state (no error) */
+  /* Normal selected/unselected state (no error) */
   ${props => !props.$hasError && `
-    background: ${
-      props.$isSelected
-        ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-        : 'rgba(255, 255, 255, 0.9)'
-    };
-    color: ${props.$isSelected ? '#ffffff' : '#333333'};
-    box-shadow: ${
-      props.$isSelected
-        ? '0 4px 12px rgba(102, 126, 234, 0.4)'
-        : '0 2px 8px rgba(0, 0, 0, 0.1)'
-    };
+    background-color: ${props.$isSelected ? '#4B47CE' : '#b2b2b2'};
+    color: #ffffff;
   `}
 
   &:hover {
-    box-shadow: ${props =>
-      props.$isSelected
-        ? '0 6px 16px rgba(102, 126, 234, 0.6)'
-        : '0 4px 12px rgba(0, 0, 0, 0.15)'
-    };
     transform: translateY(-2px);
   }
 
@@ -134,21 +95,20 @@ export const DayCell = styled(motion.button)<{
   }
 
   &:focus-visible {
-    outline: 3px solid rgba(255, 255, 255, 0.6);
+    outline: 2px solid #4B47CE;
     outline-offset: 2px;
   }
 
   @media (max-width: 768px) {
-    width: 40px;
-    height: 40px;
+    width: 35px;
+    height: 35px;
     font-size: 14px;
-    border-radius: 10px;
   }
 
   @media (max-width: 480px) {
-    width: 36px;
-    height: 36px;
-    font-size: 12px;
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
   }
 `;
 
@@ -159,24 +119,34 @@ export const InfoContainer = styled.div`
   justify-content: center;
   align-items: center;
   gap: 8px;
+  margin: 8px 0 16px 0;
 `;
 
 export const InfoText = styled.p`
   margin: 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.95);
+  font-size: 16px;
+  font-weight: 400;
+  color: #000000;
   text-align: center;
 
+  strong {
+    font-weight: 600;
+  }
+
+  .day-name {
+    color: #31135D;
+    font-weight: 600;
+  }
+
   @media (max-width: 768px) {
-    font-size: 13px;
+    font-size: 14px;
   }
 `;
 
 export const ResetButton = styled.button`
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.9);
+  color: #666666;
   font-size: 13px;
   font-weight: 500;
   text-decoration: underline;
@@ -185,7 +155,7 @@ export const ResetButton = styled.button`
   transition: all 0.2s ease;
 
   &:hover {
-    color: #ffffff;
+    color: #4B47CE;
     text-decoration: none;
   }
 

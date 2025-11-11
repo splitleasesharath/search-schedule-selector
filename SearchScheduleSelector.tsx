@@ -426,7 +426,14 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
   return (
     <Container className={className}>
       <SelectorRow>
-        <CalendarIcon>📅</CalendarIcon>
+        <CalendarIcon>
+          <img
+            src="https://c.animaapp.com/meh6k861XoGXNn/img/calendar-minimalistic-svgrepo-com-202-svg.svg"
+            alt="Calendar"
+            width="35"
+            height="35"
+          />
+        </CalendarIcon>
 
         <DaysGrid>
           {DAYS_OF_WEEK.map((day, index) => (
@@ -459,7 +466,7 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
         {selectedDays.size > 0 && checkinDay && checkoutDay && (
           <>
             <InfoText>
-              <strong>Check-in:</strong> {checkinDay} • <strong>Check-out:</strong> {checkoutDay}
+              <strong>Check-in:</strong> <span className="day-name">{checkinDay}</span> • <strong>Check-out:</strong> <span className="day-name">{checkoutDay}</span>
             </InfoText>
             <ResetButton onClick={handleReset}>Clear selection</ResetButton>
           </>
