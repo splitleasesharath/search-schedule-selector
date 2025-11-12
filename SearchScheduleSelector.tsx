@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { AnimatePresence } from 'framer-motion';
 import {
   Container,
   SelectorRow,
@@ -8,10 +7,6 @@ import {
   DayCell,
   InfoContainer,
   InfoText,
-  ResetButton,
-  ErrorPopup,
-  ErrorIcon,
-  ErrorMessage,
 } from './SearchScheduleSelector.styles';
 import type {
   Day,
@@ -465,7 +460,12 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
       <InfoContainer>
         {selectedDays.size > 0 && (
           <InfoText>
-            {selectedDays.size === 7 ? (
+            {showError ? (
+              <span style={{ color: '#d32f2f', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>⚠️</span>
+                <span>{errorMessage}</span>
+              </span>
+            ) : selectedDays.size === 7 ? (
               <span className="day-name">Full Time</span>
             ) : (
               checkinDay && checkoutDay && (
@@ -477,20 +477,6 @@ export const SearchScheduleSelector: React.FC<SearchScheduleSelectorProps> = ({
           </InfoText>
         )}
       </InfoContainer>
-
-      <AnimatePresence>
-        {showError && (
-          <ErrorPopup
-            initial={{ opacity: 0, scale: 0.8, y: -20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.8, y: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <ErrorIcon>⚠️</ErrorIcon>
-            <ErrorMessage>{errorMessage}</ErrorMessage>
-          </ErrorPopup>
-        )}
-      </AnimatePresence>
     </Container>
   );
 };
